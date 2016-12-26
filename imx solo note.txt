@@ -359,5 +359,11 @@ echo "/home/jack/shareFile/uaMake/xc9000ua/linux_lib/pc" >> /etc/ld.so.conf
 ldconfig
 
 
+git init
+git add README.md
+git commit -m "first commit"
+git remote add origin https://github.com/qq9424/
+git push -u origin master
+
 
 
