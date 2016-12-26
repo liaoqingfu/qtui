@@ -1,0 +1,35 @@
+//数字转字符
+void TimeLine:: mousePressEvent(QMouseEvent *m)
+ {
+    cout <<"x pos:" + QString::number ( m->pos().x())  + "y pos:" + QString::number ( m->pos().y()) <<endl;
+    QGraphicsView::mousePressEvent(m);
+ }
+//拖放操作：mouseMoveEvent， ShiftModifier
+void Chip::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
+{
+    if (event->modifiers() & Qt::ShiftModifier) {
+        stuff << event->pos();
+        update();
+        return;
+    }
+    QGraphicsItem::mouseMoveEvent(event);
+}
+
+//scene添加widget
+ QPushButton * selectModeButton = new QPushButton;
+ selectModeButton->setText(tr("Select"));
+ _scene->addWidget(selectModeButton);
+
+ connect(selectModeButton, SIGNAL(clicked()), this, SLOT(selectModeButtonclick()));
+
+
+    h1Splitter = new QSplitter;
+    h2Splitter = new QSplitter;
+
+    QSplitter *vSplitter = new QSplitter;
+    vSplitter->setOrientation(Qt::Vertical);//垂直排列
+    vSplitter->addWidget(h1Splitter);
+    vSplitter->addWidget(h2Splitter);
+
+//update之后，回去调用paintEvent()
+//先是View，然后是Scene，最后是Item
