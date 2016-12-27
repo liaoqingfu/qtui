@@ -1,9 +1,0 @@
-<RCC>
-    <qresource prefix="/">
-        <file>rotateleft.png</file>
-        <file>rotateright.png</file>
-        <file>zoomin.png</file>
-        <file>zoomout.png</file>
-        <file>othermainwindowbg.jpg</file>
-    </qresource>
-</RCC>
