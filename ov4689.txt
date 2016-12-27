@@ -1,0 +1,43 @@
+≤‚ ‘5640
+./mxc_v4l2_capture_save3File  -iw 640 -ih 480 -ow 640 -oh 480 -r 0 -c 5 -fr 30  -f YUYV test1.raw  
+
+./mxc_v4l2_capture  -iw 1280 -ih 720 -ow 1280 -oh 720 -r 0 -c 5 -fr 30  -f YUYV test1.raw  
+
+gst-launch-1.0 imxv4l2src device=/dev/video0 ! 'video/x-bayer,format=(string)bggr,width=1280,height=720,framerate=(fraction)30/1' ! imxv4l2sink
+
+gst-launch-1.0 imxv4l2src device=/dev/video0 ! 'video/x-raw,format=(string)UYVY,width=1280,height=720,framerate=(fraction)30/1' ! imxv4l2sink
+
+gst-launch-1.0 imxv4l2src device=/dev/video0 ! 'video/x-bayer,format=(string)bggr,width=1280,height=720,framerate=(fraction)30/1' ! videosink video-sink="overlaysink overlay-width=512 overlay-height=384"
+
+/home/jack/Spon-Xserial/imx6/board/mx6sxc9241/application/imx-vpu-5.4.33/vpu
+
+
+ipu_param_mem.h	_ipu_ch_param_init		ipu_ch_param_set_field
+fmt_to_bpp
+
+
+export PATH=/mnt/rootfs_core/usr/lib/:$PATH;
+
+
+CC=arm-linux-gcc  PKG_CONFIG_PATH=/usr/lib/pkgconfig ./configure --build=i686-linux --host=arm-linux --prefix=/home/jack/gstream   CFLAGS=-I/usr/include --disable-registry --disable-loadsave --disable-gtk-doc ac_cv_func_register_printf_function=no --disable-valgrind 
+
+1£¨ ov4689_setting_15fps_VGA_1920_1080
+
+# ./memtool -32 21dc010 10
+E
+Reading 0x10 count starting at address 0x021DC010
+
+0x021DC010:  00000001 00000330 00000000 00000000
+0x021DC020:  10000113 00001130 00000000 00000000
+
+
+2£¨ ov4689_init_setting_30fps_2688_1520
+{ 0x5040 ,0x80	,0 ,0 },   //bit 7: 1 test enable  0x80
+{ 0x8008 ,0x01	,0 ,0 },  //fix pattern enable bit 0 =1
+
+# ./memtool -32 21dc010 10
+E
+Reading 0x10 count starting at address 0x021DC010
+
+0x021DC010:  00000001 00000300 00000000 00000000
+0x021DC020:  1F004753 0000FF30 00000000 00000000

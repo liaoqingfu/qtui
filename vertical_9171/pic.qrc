@@ -1,0 +1,22 @@
+<RCC>
+    <qresource prefix="/">
+        <file>input_dp_1.bmp</file>
+        <file>input_dp_2.bmp</file>
+        <file>input_dp_3.bmp</file>
+        <file>input_dp_4.bmp</file>
+        <file>input_dp_5.bmp</file>
+        <file>input_dp_6.bmp</file>
+        <file>input_dp_7.bmp</file>
+        <file>input_dp_8.bmp</file>
+        <file>input_dp_9.bmp</file>
+        <file>input_dp_10.bmp</file>
+        <file>input_dp_11.bmp</file>
+        <file>input_dp_12.bmp</file>
+        <file>input_dp_13.bmp</file>
+        <file>input_dp_14.bmp</file>
+        <file>input_dp_15.bmp</file>
+        <file>offline.bmp</file>
+        <file>online.bmp</file>
+        <file>pic_call.bmp</file>
+    </qresource>
+</RCC>

@@ -1,0 +1,21 @@
+linux pc 编译
+
+
+1，osip
+./configure --prefix=/home/jack/shareFile/uaMake/objs/ --exec-prefix=/home/jack/shareFile/uaMake/objs/ CFLAGS=-O2  --enable-static
+make 
+make install
+
+2，exosip：
+3，ortp-0.22.0：
+4，alsa-lib-1.1.1：
+5，portaudio
+
+
+arm 编译
+./configure --host=arm-none-linux  --prefix=/home/jack/shareFile/uaMake/xc9000ua/linux_lib/arm/  --exec-prefix=/home/jack/shareFile/uaMake/xc9000ua/linux_lib/arm/  CFLAGS=-O2 CC=/home/jack/Spon-Xserial/imx6/tools/arm-linux-cotex-a9-glibc/usr/bin/arm-linux-gcc   --enable-shared=yes
+make && make install
+
+
+
+

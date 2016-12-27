@@ -1,0 +1,35 @@
+export GSTL=gst-launch-1.0 
+export PLAYBIN=playbin 
+export GPLAY=gplay-1.0 
+export GSTINSPECT=gst-inspect-1.0 
+
+GSTL filesrc location=test.mp3 ! id3demux ! queue ! mpegaudioparse ! beepdec ! pulsesink
+GSTL filesrc location=test.mp4 typefind=true  ! video/quicktime ! aiurdemux ! queue max-size-time=0  ! vpudec ! overlaysink 
+GPLAY /mnt/sdcard/test.avi 
+GSTL $PLAYBIN uri=file:///mnt/sdcard/test.avi 
+
+
+Video encoding 
+
+$GSTL filesrc location=test.yuv     ! videoparse format=2 witdh=$WIDTH height=$HEIGHT framerate=30/1     ! vpuenc_xxx ! $MUXER ! filesink location=$output       
+
+ ? The target encoder codec type could be MPEG4, H263, H264, or MJPEG. 
+? The vpuenc_xxx can be vpuenc_mpeg4, vpuenc_h263, vpuenc_h264, and vpuenc_jpeg.
+? The $MUXER can be set to qtmux, matroskamux, mp4mux, avimux, or flvmux. 
+? Different muxers support different encoded codec types. Use $GSTINSPECT $MUXER to see the capabilities of the muxer to be used.
+
+7.3.6 Video recording Video recording is done using the camera input
+$GSTL imxv4l2src device=$DEVICE num-buffers=300 ! $INPUT_CAPS ! queue ! vpuenc_h264    ! $ $MUXER ! filesink location=output.$EXTENSION 
+? $DEVICE could be set to /dev/video, /dev/video0, or /dev/video1 according to the system video input device.
+
+? $INPUT_CAPS should be set to 'video/xraw,format=(string)NV12,width=1920,height=1080,framerate=(fraction)30/1'. 
+? $MUXER can be set as to qtmux, matroskamux, mp4mux, avimux, or flvmux. 
+
+Camera preview example:
+$GSTL imxv4l2src device=/dev/video1 ! 'video/x-raw,     format=(string)UYVY,width=640,height=480,framerate=(fraction)30/1'     ! imxv4l2sink 
+
+ Device Drivers > MXC support drivers > MXC VPU (Video Processing Unit) support
+"Device Drivers" > "MXC support drivers" > "MXC Vivante GPU support" > "MXC Vivante GPU support"
+
+
+ll ./rootfs_core/lib/firmware/vpu/vpu_fw_imx6q.bin  ./Spon-Xserial/imx6/mkrootfs/rootfs/usr/firmware/vpu/vpu_fw_imx6q.bin  ./Spon-Xserial/imx6/board/mx6sxc9241/image/firmware/vpu/vpu_fw_imx6q.bin  ./Spon-Xserial/imx6/rootfs/usr/firmware/vpu/vpu_fw_imx6q.bin ./Spon-Xserial/xc9241/board/mx6sxc9241/image/firmware/vpu/vpu_fw_imx6q.bin  ./shareFile/rootfs.tar/lib/firmware/vpu/vpu_fw_imx6q.bin

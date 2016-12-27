@@ -1,0 +1,15 @@
+1，osip
+./configure --prefix=/home/jack/shareFile/uaMake/objs/ --exec-prefix=/home/jack/shareFile/uaMake/objs/ CFLAGS=-O2
+make 
+make install
+
+2，exosip：
+3，ortp-0.22.0：
+4，alsa-lib-1.1.1：
+5，portaudio
+
+
+arm 编译
+./configure --host=arm --prefix=/home/jack/shareFile/uaMake/objs_arm/ --exec-prefix=/home/jack/shareFile/uaMake/objs_arm/ CFLAGS=-O2 CC=/home/jack/Spon-Xserial/imx6/tools/arm-linux-cotex-a9-glibc/usr/bin/arm-linux-gcc
+make 
+make install
