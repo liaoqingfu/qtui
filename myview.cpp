@@ -14,6 +14,15 @@ MyView::MyView(QWidget *parent) :
     tilePainter.end();
 
     setBackgroundBrush(tilePixmap);*/
+    showWindowType = 0;
+	
+	scene_main = new MyScene();
+	scene_main->setSceneRect(0,0,1024,600);//(0,0,(static_cast<QWidget *>600),(static_cast<QWidget *>600) );
+	this->setScene(scene_main);
+
+	scene_video = new myscene_video();
+	scene_video->setSceneRect(0,0,1024,600);
+	
 }  
   
 void MyView::keyPressEvent(QKeyEvent *event)  
@@ -36,7 +45,12 @@ void MyView::keyPressEvent(QKeyEvent *event)
   
 void MyView::mousePressEvent(QMouseEvent *event)  
 {  
-//    qDebug("***MyView::mousePress*");
+    qDebug("***MyView::mousePress*");
+	if(scene_main->bShowThisWindow == 0)
+		this->setScene(scene_video);
+	else if(scene_video->bShowThisWindow == 0)
+		this->setScene(scene_main);
+	
 	QGraphicsView::mousePressEvent(event);	
 }  
   

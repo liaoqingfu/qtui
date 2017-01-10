@@ -41,7 +41,10 @@
 #include "QToolTip"
 
 #include <qmath.h>
-#define REF_TIME_MS 1000
+#define FRAME_FPS     15
+#define REF_TIME_MS  1000
+#define REF_VIDEO_MS (1000/FRAME_FPS)
+
 #define NUM_CALL 15   //num of call num button
 #define MAX_NUM_LEN 10   //lengh of call num
 #define MAX_CALL_TYPE  2
@@ -53,6 +56,10 @@
     #define CFG_NAME "sys_cfg.txt"
 #endif
 
+#define NUM_X_WID       160
+#define NUM_START_X     200   //1开始位置
+
+#define NUM_Y_HEIGHT    200
 
 #endif // PUBLIC_H
 
