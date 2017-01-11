@@ -202,25 +202,13 @@ int main_api()
 {
 	char c;
 	printf("enter S (start test), P(stop test)\n");
-	bRun = 1;
+	setRunstate(1);
 	startVideoTest();
 
-	while(1){
-		scanf("%c\n",&c);
-		if( (c == 'S') && (bRun != 1)){
-			bRun = 1;
-			video_capture_init(image_width, image_height, image_fps);
-		}
-		else if(c == 'P'){
-			bRun = 0;
-			video_capture_destroy();
-		}			
-		
-	}
 }
 
-//sequence_execute_example
-int main_sequence_execute()
+
+void * sequence_execute( void * args)
 {
 
 	
@@ -246,13 +234,29 @@ int main_sequence_execute()
 		printf("h264_dec_init fail\n");
 		return -1;
 	}
-
-	if (video_capture_read(&yuv_buf,&yuv_len) > 0) {
-		enc_re_len = h264_enc_process(yuv_buf, yuv_len,&enc_re_data_ptr);	//lhg comment:	yuv --->h264 (data_ptr)
+	while( 1 ) {
+		if (video_capture_read(&yuv_buf,&yuv_len) > 0) {
+			enc_re_len = h264_enc_process(yuv_buf, yuv_len,&enc_re_data_ptr);	//lhg comment:	yuv --->h264 (data_ptr)
+		}
+		h264_dec_run(h264_dec_ctx , enc_re_data_ptr, enc_re_len);
 	}
-	h264_dec_run(h264_dec_ctx , enc_re_data_ptr, enc_re_len);
 	
 }
+
+
+int main_sequence_execute()
+{
+
+	pthread_t pid;
+	
+	if (pthread_create(&pid, NULL, sequence_execute, NULL) < 0){
+		printf("sequence_execute  create error:%s\n", strerror(errno));
+		return -1;
+	} 
+	return 0;
+}
+
+
 
 
 

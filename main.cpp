@@ -7,19 +7,22 @@
 int main(int argc, char *argv[])
 {
     //QApplication a(argc, argv);
-   Application a(argc, argv);
-
+    Application appli(argc, argv );
+    
+    Widget wid;
+	appli.setMyView( wid.view );
+	
     QIcon ico(":/broadcast1.png");
-    a.setWindowIcon( ico );
+    appli.setWindowIcon( ico );
 
     QFont font;
     font.setPointSize(26);
     font.setFamily( FONE_NAME );
     font.setBold(false);
-    a.setFont(font);
+    appli.setFont(font);
 
-    Widget w;
-   // w.show();
 
-    return a.exec();
+    wid.view->show();
+
+    return appli.exec();
 }

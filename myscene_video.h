@@ -3,6 +3,7 @@
   
 #include "public.h"
 
+
 #include <QUdpSocket> 
 
 #define VIDEO_CAPTURE_ERR		1
@@ -15,9 +16,9 @@ class myscene_video : public QGraphicsScene
 {  
 	Q_OBJECT  
 public:  
-	explicit myscene_video(QObject *parent = 0);	
-	int bShowThisWindow;
+    explicit myscene_video(class MyView * pmv, QObject *parent = 0);
 	void startVideo();
+	void stopVideo();
 
   
 protected:	
@@ -28,13 +29,14 @@ signals:
 
 
 public slots:
-	void bt_stopCallClicked( int buttonID);
+	void bt_stopCallClicked(  );
 //	void recv_slot();
 
 private:
         void widget_init();
 
 		QUdpSocket *udpSocket;
+        class MyView * pmv;
 		
 
         //call type 1

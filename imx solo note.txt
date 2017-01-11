@@ -1,3 +1,39 @@
+V4L2_CID_MXC_ROT   CONFIG_MXC_IPU_PRP_VF_SDC
+
+ 如果想屏幕永不休眠,在UBOOT启动参数bootargs中增加 consoleblank=0
+setenv bootargs 'console=ttymxc0,115200 nosmp consoleblank=0 root=/dev/mmcblk3p3 rootwait rw '
+
+echo 1 >> /sys/class/backlight/backlight/bl_power 
+echo 7 >> /sys/bus/platform/drivers/pwm-backlight/backlight/backlight/backlight/brightness 
+
+http://192.168.186.6/svn/XC-9241/trunk/workspace/buildroot/output/.br-external
+BR2_EXTERNAL ?= /home/jack/XC-9241/trunk/workspace/imx6/board/mx6sxc9241
+
+vi /etc/boa/boa.conf   修改User 0  ，Group 0 ，ScriptAlias /cgi-bin/ /var/www/cgi-bin/ 
+mkdir /var/log/boa
+cp -ar /mnt/Spon-Xserial/buildroot/output/build/web_config-undefined/* /var/www/
+
+setenv display 'video=mxcfb1:dev=hdmi,1920x1080M@60,if=RGB24 video=mxcfb0:dev=ldb,if=RGB24,bpp=16 ldb=sin0'
+setenv disp_args 'video=mxcfb1:dev=hdmi,1920x1080M@60,if=RGB24 video=mxcfb0:dev=ldb,if=RGB24,bpp=16 ldb=sin0'
+
+setenv display 'video=mxcfb0:dev=hdmi,1920x1080M@60,if=RGB24 video=mxcfb1:dev=ldb,if=RGB24,bpp=16 ldb=sin0'
+setenv disp_args 'video=mxcfb0:dev=hdmi,1920x1080M@60,if=RGB24 video=mxcfb1:dev=ldb,if=RGB24,bpp=16 ldb=sin0'
+
+
+
+setenv display 'video=mxcfb0:dev=hdmi,1024x600M@30,if=RGB24 video=mxcfb1:dev=ldb,if=RGB24,bpp=16 ldb=sin0'
+setenv disp_args 'video=mxcfb0:dev=hdmi,1024x600M@30,if=RGB24 video=mxcfb1:dev=ldb,if=RGB24,bpp=16 ldb=sin0'
+
+setenv display 'video=mxcfb0:dev=hdmi,640x480M@30,if=RGB24 video=mxcfb1:dev=ldb,if=RGB24,bpp=16 ldb=sin0'
+setenv disp_args 'video=mxcfb0:dev=hdmi,,640x480M@30,if=RGB24 video=mxcfb1:dev=ldb,if=RGB24,bpp=16 ldb=sin0'
+
+摄像头驱动比较
+\\192.168.1.106\home\svnxc9241\workspace\imx6\kernel\linux-imx\drivers\media\platform\mxc\capture
+\\192.168.1.106\home\Spon-Xserial\imx6\kernel\linux-imx\drivers\media\platform\mxc\capture
+ 
+cd /mnt/shareFile/imx-test-5.4.1/test/mxc_v4l2_test/
+./mxc_v4l2_capture    -iw 640 -ih 480 -ow 640 -oh 480 -r 0 -c 5000 -fr 30  -f 422P  10633.raw 
+
 vi /var/www/ini/sys_cfg.txt 
 
 /home/jack/Spon-Xserial/buildroot/output/build/strong-undefined# rm .stamp_target_installed  .stamp_built
@@ -107,6 +143,16 @@ echo 133 > /sys/class/gpio/unexport               close gpio
 echo in > /sys/class/gpio/gpio133/direction       in, out   
 echo 1 > /sys/class/gpio/gpio133/value    
 cat  /sys/class/gpio/gpio133/value  
+
+插座接口   pad Name       gpio      Mux Register     Pad Control    GPIO data register     direction register
+按键-低电平响应
+22        EIM_BCLK        6_31      20E_0138         20E_0508        20B_0000              20B_0004
+24        CSI0_DATA_EN    5_20      20E_008C         20E_03A0        20A_C000            20A_C004
+按键灯
+42        SD2_DATA2       1_13      20E_0304h        20E_06ECh        209_C000               209_C004
+44        SD2_DATA0       1_15      20E_02FCh       20E_06E4h
+
+DISP0_DAT15 spk  高电平 打开  GPIO5_IO09
 
  ./memtool 20ac000 8           gpio5_5, dr, dir
 
@@ -362,8 +408,182 @@ ldconfig
 git init
 git add README.md
 git commit -m "first commit"
-git remote add origin https://github.com/qq9424/
+git remote add origin https://github.com/qq9424/generalMakefile
 git push -u origin master
+
+1， ext2文件系统uboot参数
+baudrate=115200
+bootargs=console=ttymxc0,115200 nosmp root=/dev/nfs ip=dhcp nfsroot=192.168.1.106:/home/jack/rootfs; tftpboot=echo Booting from tftp ...; run mmcargs; run set_net_cmd; ${get_cmd} ${loadaddr} ${image_file}; if ${get_cmd} ${fdt_addr} ${fdt_file}; then bootz ${loadaddr} - ${fdt_addr}; else echo WARN: Cannot boot from tftp; fi;,v3,tcp rw
+bootcmd=mmc dev ${mmcdev}; if run loadimage; then run mmcboot; else run netboot; fi; 
+bootcmd_mfg=run mfgtool_args; bootz ${loadaddr} ${initrd_addr} ${fdt_addr};
+bootdelay=1
+console=ttymxc0
+display=video=mxcfb1:dev=hdmi,640x480M@60,if=RGB24 video=mxcfb0:dev=ldb,if=RGB24,bpp=16 ldb=sin0
+ethact=FEC
+ethaddr=00:E0:4C:EA:00:01
+ethprime=FEC
+fb0_hdmi=video=mxcfb0:dev=hdmi,1920x1080M@60,if=RGB24
+fb0_lcd=video=mxcfb0:dev=lcd,SEIKO-WVGA,if=RGB24
+fb0_lvds0=video=mxcfb0:dev=ldb,if=RGB666 ldb=sin0
+fb0_lvds1=video=mxcfb0:dev=ldb,if=RGB666 ldb=sin1
+fb1_hdmi=video=mxcfb1:dev=hdmi,1920x1080M@60,if=RGB24
+fb1_lcd=video=mxcfb1:dev=lcd,SEIKO-WVGA,if=RGB24
+fb1_lvds0=video=mxcfb1:dev=ldb,if=RGB666 ldb=sin0
+fb1_lvds1=video=mxcfb1:dev=ldb,if=RGB666 ldb=sin1
+fbcon=rotate:1
+fdt_addr=0x18000000
+fdt_file=mx6sxc9171.dtb
+fdt_high=0xffffffff
+get_cmd=tftp
+image_file=zImage-mx6sxc9171
+init=/linuxrc
+initrd_addr=0x12C00000
+initrd_high=0xffffffff
+ip_dyn=no
+ipaddr=192.168.1.81
+loadaddr=0x12000000
+loadfdt=fatload mmc ${mmcdev}:${mmcpart} ${fdt_addr} ${fdt_file}
+loadimage=fatload mmc ${mmcdev}:${mmcpart} ${loadaddr} ${image_file}
+lvds_sync=video=mxcfb0:dev=ldb,if=RGB666 ldb=dul1
+mfgtool_args=setenv bootargs console=ttymxc0,115200 rdinit=/linuxrc g_mass_storage.stall=0 g_mass_storage.removable=1 g_mass_storage.idVendor=0x066F g_mass_storage.idProduct=0x37FF g_mass_storage.iSerialNumber="" enable_wait_mode=off 
+mmcargs=run set_disp; setenv bootargs console=${console},${baudrate} ${smp}  fbcon=${fbcon} root=${mmcroot} ${disp_args}
+mmcboot=echo Booting from mmc ...; run mmcargs; if run loadfdt; then bootz ${loadaddr} - ${fdt_addr}; else echo WARN: Cannot boot from mmc; fi;
+mmcdev=1
+mmcpart=1
+mmcroot=/dev/mmcblk3p2 rootwait rw
+netargs=setenv bootargs console=${console},${baudrate} ${smp} root=/dev/nfs ip=dhcp nfsroot=${serverip}:${nfsroot},v3,tcp rw
+netboot=echo Booting from net ...; run netargs; run set_net_cmd; ${get_cmd} ${loadaddr} ${image_file}; if ${get_cmd} ${fdt_addr} ${fdt_file}; then bootz ${loadaddr} - ${fdt_addr}; else echo WARN: Cannot boot from net; fi;
+nfsroot=/home/jack/rootfs; tftpboot=echo Booting from tftp ...; run mmcargs; run set_net_cmd; ${get_cmd} ${loadaddr} ${image_file}; if ${get_cmd} ${fdt_addr} ${fdt_file}; then bootz ${loadaddr} - ${fdt_addr}; else echo WARN: Cannot boot from tftp; fi;
+serverip=192.168.1.106
+set_disp=setenv disp_args ${display}
+set_net_cmd=if test ${ip_dyn} = yes; then setenv get_cmd dhcp; else setenv get_cmd tftp; fi;
+smp=nosmp
+uboot_file=uboot-mx6sxc9241.imx
+update_fdt=run set_net_cmd; ${get_cmd} ${loadaddr} ${fdt_file}; fatwrite mmc ${mmcdev}:${mmcpart} ${loadaddr} ${fdt_file} 0x80000 
+update_kern=run set_net_cmd; ${get_cmd} ${loadaddr} ${image_file}; fatwrite mmc ${mmcdev}:${mmcpart} ${loadaddr} ${image_file} 0x600000 
+update_uboot=if run set_net_cmd; then if ${get_cmd} ${loadaddr} ${uboot_file}; then sf probe 1; sf erase 0 0x200000; sf write ${loadaddr} 0x400 0x80000; fi; else echo FAIL: Update u-boot fail ...; fi;
+
+Environment size: 3428/8188 bytes
+
+Cramfs：Compressed ROM File System，只读的特点有利于保护文件系统免受破坏，Cramfs在嵌入式系统中应用广泛
+Ramdisk是将一部分固定大小的内存当作分区来使用，将实际的文件系统装入内存的机制，并且可以作为根 文件系统
+
+ramfs是Linux下一种基于RAM做存储的文件系统
+sudo mount -t ramfs -o size=10M ramfs ./ramfs/
+sudo dd if=/dev/zero of=./ramfs/test.file bs=1M count=20
+tmpfs也是Linux下的一个文件系统，它将所有的文件都保存在虚拟内存中，umount tmpfs后所有的数据也会丢失，tmpfs就是ramfs的衍生品。tmpfs使用了虚拟内存的机制，它会进行swap，但是它有一个相比ramfs的好处：mount时指定的size参数是起作用的，这样就能保证系统的安全，而不是像ramfs那样，一不留心因为写入数据太大吃光系统所有内存
+
+
+\\192.168.1.106\home\Spon-Xserial\imx6\kernel\linux-imx\arch\arm\boot\dts\imx6qdl-sabresd.dtsi
+
+2，ramfs文件系统uboot参数
+baudrate=115200 
+bootcmd=if test ${bootstatus} = 0;then setenv bootmode recovery; setenv mmcpart 1;else setenv bootmode system;setenv mmcpart 2;fi;setenv bootstatus 0;saveenv;run ramboot; 
+bootcmd_mfg=run mfgtool_args; bootz ${loadaddr} ${initrd_addr} ${fdt_addr}; 
+bootdelay=1 
+bootmode=system 
+bootstatus=1 
+console=ttymxc0 
+display= 
+ethact=FEC 
+ethaddr=00:89:c0:a8:01:71 
+ethport=eth0 
+ethprime=FEC 
+fb0_hdmi=video=mxcfb0:dev=hdmi,1920x1080M@60,if=RGB24 
+fb0_lcd=video=mxcfb0:dev=lcd,SEIKO-WVGA,if=RGB24 
+fb0_lvds0=video=mxcfb0:dev=ldb,if=RGB666 ldb=sin0 
+fb0_lvds1=video=mxcfb0:dev=ldb,if=RGB666 ldb=sin1 
+fb1_hdmi=video=mxcfb1:dev=hdmi,1920x1080M@60,if=RGB24 
+fb1_lcd=video=mxcfb1:dev=lcd,SEIKO-WVGA,if=RGB24 
+fb1_lvds0=video=mxcfb1:dev=ldb,if=RGB666 ldb=sin0 
+fb1_lvds1=video=mxcfb1:dev=ldb,if=RGB666 ldb=sin1 
+fdt_addr=0x18000000 
+fdt_file=mx6sxc9241.dtb 
+fdt_high=0xffffffff 
+image_file=zImage-mx6sxc9241 
+initrd_addr=0x12C00000 
+initrd_high=0xffffffff 
+ip_dyn=no 
+ipaddr=192.168.1.113 
+loadaddr=0x12000000 
+loadfdt=fatload mmc ${mmcdev}:${mmcpart} ${fdt_addr} ${fdt_file} 
+loadimage=fatload mmc ${mmcdev}:${mmcpart} ${loadaddr} ${image_file} 
+lvds_sync=video=mxcfb0:dev=ldb,if=RGB666 ldb=dul1 
+mfgtool_args=setenv bootargs console=ttymxc0,115200 rdinit=/linuxrc g_mass_storage.stall=0 g_mass_storage.removable=1 g_mass_storage.idVendor=0x066F g_mass_storage.idProduct=0x37FF g_mass_storage.iSerialNumber="" enable_wait_mode=off 
+mmcargs=run set_disp; setenv bootargs console=${console},${baudrate} ${smp} root=${mmcroot} ${disp_args} 
+mmcboot=echo Booting from mmc ${mmcdev}:${mmcpart} ...; mmc dev ${mmcdev};run mmcargs; run loadimage;if run loadfdt; then bootz ${loadaddr} - ${fdt_addr}; else echo WARN: Cannot boot from mmc; fi; 
+mmcdev=1 
+mmcpart=2 
+mmcroot=/dev/mmcblk3p3 rootwait rw 
+netargs=setenv bootargs console=${console},${baudrate} ${smp} root=/dev/nfs ip=dhcp nfsroot=${serverip}:${nfsroot},v3,tcp rw 
+netboot=echo Booting from net ...; run netargs; run set_net_cmd; ${get_cmd} ${loadaddr} ${image_file}; if ${get_cmd} ${fdt_addr} ${fdt_file}; then bootz ${loadaddr} - ${fdt_addr}; else echo WARN: Cannot boot from net; fi; 
+netmask=255.255.255.0 
+nfsroot=/home/jack/rootfs; 
+ramargs=setenv bootargs console=${console},${baudrate} mac=${ethaddr} rdinit=/sbin/init 
+ramboot=echo Booting from mmc ${mmcdev}:${mmcpart} ...; mmc dev ${mmcdev};run ramargs; run loadimage;if run loadfdt; then bootz ${loadaddr} - ${fdt_addr}; else echo WARN: Cannot boot from mmc; fi; 
+route=192.168.1.1 
+serverip=192.168.1.244 
+set_disp=setenv disp_args ${display} 
+set_net_cmd=if test ${ip_dyn} = yes; then setenv get_cmd dhcp; else setenv get_cmd tftp; fi; 
+smp=nosmp 
+tftpboot=echo Booting from tftp ...; run mmcargs; run set_net_cmd; ${get_cmd} ${loadaddr} ${image_file}; if ${get_cmd} ${fdt_addr} ${fdt_file}; then bootz ${loadaddr} - ${fdt_addr}; else echo WARN: Cannot boot from tftp; fi; 
+uboot_file=uboot-mx6sxc9241.imx 
+update_fdt=run set_net_cmd; ${get_cmd} ${loadaddr} ${fdt_file}; fatwrite mmc ${mmcdev}:${mmcpart} ${loadaddr} ${fdt_file} 0x80000 
+update_kern=run set_net_cmd; ${get_cmd} ${loadaddr} ${image_file}; fatwrite mmc ${mmcdev}:${mmcpart} ${loadaddr} ${image_file} 0x600000 
+update_uboot=if run set_net_cmd; then if ${get_cmd} ${loadaddr} ${uboot_file}; then sf probe 1; sf erase 0 0x200000; sf write ${loadaddr} 0x400 0x80000; fi; else echo FAIL: Update u-boot fail ...; fi; 
+
+Environment size: 3461/8188 bytes
+
+3，更改ramfs的uboot参数
+setenv bootcmd 'if test ${bootstatus} = 0;then setenv bootmode recovery; setenv mmcpart 1;else setenv bootmode system;setenv mmcpart 2;fi;setenv bootstatus 0;saveenv;run ramboot;' 
+setenv bootcmd_mfg  'run mfgtool_args; bootz ${loadaddr} ${initrd_addr} ${fdt_addr}; ' 
+setenv bootmode  'system' 
+setenv bootstatus 1 
+setenv ethport 'eth0'  
+setenv mmcboot 'echo Booting from mmc ${mmcdev}:${mmcpart} ...; mmc dev ${mmcdev};run mmcargs; run loadimage;if run loadfdt; then bootz ${loadaddr} - ${fdt_addr}; else echo WARN: Cannot boot from mmc; fi;'  
+setenv mmcpart 2 
+setenv mmcroot  '/dev/mmcblk3p3 rootwait rw'  
+setenv netmask '255.255.255.0'  
+setenv nfsroot '/home/jack/rootfs;'  
+
+setenv ramargs 'run set_disp; setenv bootargs console=${console},${baudrate} ${smp} root=${mmcroot} ${disp_args} mac=${ethaddr} rdinit=/sbin/init '  
+setenv ramboot  'echo Booting from mmc ${mmcdev}:${mmcpart} ...; mmc dev ${mmcdev};run ramargs;  run loadimage;if run loadfdt; then bootz ${loadaddr} - ${fdt_addr}; else echo WARN: Cannot boot from mmc; fi;'  
+setenv route '192.168.1.1'  
+setenv tftpboot  'echo Booting from tftp ...; run mmcargs; run set_net_cmd; ${get_cmd} ${loadaddr} ${image_file}; if ${get_cmd} ${fdt_addr} ${fdt_file}; then bootz ${loadaddr} - ${fdt_addr}; else echo WARN: Cannot boot from tftp; fi;'  
+
+setenv bootargs  'console=ttymxc0,115200 nosmp root=/dev/mmcblk3p2 rootwait rw video=mxcfb1:dev=hdmi,1920x1080M@60,if=RGB24 video=mxcfb0:dev=ldb,if=RGB24,bpp=16 ldb=sin0 mac=00:E0:4C:EA:00:01' 
+setenv mmcpart 2 
+setenv mmcroot  '/dev/mmcblk3p3 rootwait rw'
+setenv image_file  'zImage-mx6sxc9171'
+setenv fdt_file  'mx6sxc9171.dtb'
+
+setenv display   'video=mxcfb1:dev=hdmi,1920x1080M@60,if=RGB24 video=mxcfb0:dev=ldb,if=RGB24,bpp=16 ldb=sin0'
+
+
+F:\work\imx6 solo\mfgtools-SPON-IMX6Solo\mfgtools-IMX6Solo-XC9241\Profiles\Linux\OS Firmware\mksdcard.sh
+sfdisk --force ${node} << EOF
+${BOOT_ROM_SIZE}M,200M,0c
+300M,500M,83
+1024M,,83
+EOF
+
+编译时，include顺序有关，先包含uapi，再include
+fatal error: asm/linkage.h: No such file or directory
+-I /home/jack/Spon-Xserial/imx6/kernel/linux-imx/include/uapi -I/home/jack/Spon-Xserial/imx6/kernel/linux-imx/include 
+
+ export LD_LIBRARY_PATH=/root/bin:$LD_LIBRARY_PATH
+
+echo 5 >  /proc/sys/kernel/printk
+cp /mnt/shareFile/linuxFile/arm-gdb /bin/
+ cp /mnt/shareFile/linuxFile/libncurses.so.6  /lib/
+
+
+mxc_v4l2: 内核： ipu_csi_set_window_size   ipu_csi_set_window_pos
+
+cat /sys/class/graphics/fb0/name                 DISP3 BG
+DISP3 FG: 是FG overlay，用来显示video
+DISP3 BG: 主显示，用来显示UI界面
+DISP3 BG - DI1: TVOUT，用来显示CVBS输出数据
 
 
 

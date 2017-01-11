@@ -17,6 +17,8 @@ Retval;
 	void setRunstate(int bRun);
 
     int startVideoTest();
+
+	int main_sequence_execute();
 	
 	int video_capture_init(int frame_width,int frame_height,int fps);
 	void video_capture_destroy(void);
@@ -33,6 +35,12 @@ Retval;
 	void h264_dec_uninit   (void *ctx);
 	
     void ipu_para_set (int w, int h, int cx,  int cy, int cw, int ch, int rotate);
+
+
+	bool gpio_open(int pin, int bOutDir);
+	bool gpio_close(int pin);
+	int gpio_set(int pin,int val);
+	int gpio_get(int pin);
 
 
 

@@ -19,7 +19,6 @@ INCLUDEPATH += /home/jack/Spon-Xserial/imx6/kernel/linux-imx/include/
 
 SOURCES += main.cpp\
         widget.cpp \
-    myscene.cpp \
     myview.cpp \
     application.cpp \
     video/imx_h264_dec.c \
@@ -37,10 +36,12 @@ SOURCES += main.cpp\
     video/vpu_gdi.c \
     video/vpu_debug.c \
     video/main_api.c \
-    myscene_video.cpp
+    myscene_video.cpp \
+    myscene_num_call.cpp \
+    myscene_main.cpp \
+    api/gpio.c
 
 HEADERS  += widget.h \
-    myscene.h \
     myview.h \
     public.h \
     application.h \
@@ -59,7 +60,10 @@ HEADERS  += widget.h \
     video/vpu_debug.h \
     video/vpu_util.h \
     video/main_api.h \
-    myscene_video.h
+    myscene_video.h \
+    myscene_num_call.h \
+    myscene_main.h \
+    api/common.h
 
 FORMS    +=
 

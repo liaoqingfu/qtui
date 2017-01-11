@@ -1,6 +1,8 @@
 #include "myscene_video.h"  
 #include <stdio.h>
 #include "video/main_api.h"
+#include "myview.h" 
+
 
 /*
 #define SERVER_PORT  60012
@@ -25,10 +27,9 @@ void myscene_video::recv_slot()
 */
 void myscene_video::startVideo()
 {
-	if( !bShowThisWindow )
+	if( pmv->WindowType >= WINDOW_TYPE_VIDEO_HALF )
 	{
-		bShowThisWindow = 1;
-		setRunstate( bShowThisWindow );
+		setRunstate( 1 );
 		startVideoTest();
 		bt_stopCall->show();
 	}
@@ -39,10 +40,10 @@ void myscene_video::startVideo()
 
 void myscene_video::stopVideo()
 {
-	if( bShowThisWindow )
+	if( pmv->WindowType >= WINDOW_TYPE_VIDEO_HALF )
 	{
-		bShowThisWindow = 0;
-		setRunstate( bShowThisWindow );
+		setRunstate( 0 );
+		pmv->changeWindowType(pmv->topWindowType) ;
 		bt_stopCall->hide();
 	}
 	else
@@ -54,7 +55,6 @@ void myscene_video::stopVideo()
 
 void  myscene_video::widget_init()
 {
-	bShowThisWindow = 0;
 	qDebug() << "myscene_video widget_init"; 
 
 /*	udpSocket = new QUdpSocket;
@@ -72,22 +72,22 @@ void  myscene_video::widget_init()
     //bt_stopCall->setIconSize( QSize( pixmap.width() -15,pixmap.height() -15));
     proxy = this->addWidget( bt_stopCall );
     proxy->setRotation(-90);
-    connect( bt_stopCall ,SIGNAL(buttonClicked(int)), this, SLOT(bt_stopCallClicked(int)));
+    connect( bt_stopCall ,SIGNAL(clicked( )), this, SLOT(bt_stopCallClicked( )));
 
 
 }
 
-void myscene_video::bt_stopCallClicked( int buttonID)
+void myscene_video::bt_stopCallClicked(  )
 {
   	stopVideo();
 }
 
 
-myscene_video::myscene_video(QObject *parent) :  
+myscene_video::myscene_video(MyView * pm, QObject *parent) :  
 	QGraphicsScene(parent)	
 {  
     clearFocus();
-
+	pmv = pm;
     widget_init();
 
 }  

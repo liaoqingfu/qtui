@@ -3,13 +3,21 @@
 
 #include <QApplication>
 #include <QDebug>
+#include "public.h"
+#include "myview.h"  
+
 
 class Application : public QApplication
 {
+Q_OBJECT
+
 public:
     Application(int & argc, char ** argv);
+	void setMyView( class  MyView *pv );
     bool notify(QObject *, QEvent *);
-    //bool qwsEventFilter(QWSEvent * event);
+
+private:
+    class  MyView *pview;
 
 };
 

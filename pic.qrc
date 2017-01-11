@@ -17,6 +17,8 @@
         <file>input_dp_15.bmp</file>
         <file>offline.bmp</file>
         <file>online.bmp</file>
-        <file>pic_call.bmp</file>
+        <file>main.bmp</file>
+        <file>rightCall.bmp</file>
+        <file>leftCall.bmp</file>
     </qresource>
 </RCC>
