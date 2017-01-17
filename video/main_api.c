@@ -140,8 +140,8 @@ void * capThread( void *args)
 	int fd_enc;	
 	struct ENC_DEC_BUF h264_enc;
 	
-	if (video_capture_init( image_width, image_height, image_fps) < 0 ) {	
-		printf("video_capture_init fail\n");
+	if (video_capture_init( image_width, image_height, image_width, image_height,image_fps) < 0 ) {	
+		printf("video_capture init fail\n");
 		return -1;
 	}
 
@@ -218,8 +218,8 @@ void * sequence_execute( void * args)
 	char *enc_re_data_ptr = NULL;
 
 	
-	if (video_capture_init( image_width, image_height, image_fps) < 0 ) {	
-		printf("video_capture_init fail\n");
+	if (video_capture_init( image_width, image_height, image_width, image_height,image_fps) < 0 ) {	
+		printf("video_capture _init fail\n");
 		return -1;
 	}
 	

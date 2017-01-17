@@ -119,18 +119,22 @@ v4l_stop_capturing(void)
 	int i = 0;
 	
 	for (i = 0; i < TEST_BUFFER_NUM; i++) {
-		munmap(cap_buffers[i].start,cap_buffers[i].length);
+		if( cap_buffers[i].start > 0)
+			munmap(cap_buffers[i].start,cap_buffers[i].length);
+		cap_buffers[i].start = 0;
+		cap_buffers[i].length = 0;
 	}
-	
-	ioctl(cap_fd, VIDIOC_STREAMOFF, &type);
-	close(cap_fd);
+	if (cap_fd > 0){
+		ioctl(cap_fd, VIDIOC_STREAMOFF, &type);
+		close(cap_fd);
+	}
 	cap_fd = -1;
 	printf("v4l_stop_capturing end -------------> \n");
 
 }
 
 int
-v4l_capture_setup(int width, int height, int fps)
+v4l_capture_setup(int width, int height, int ow, int oh, int fps)
 {
 	char v4l_device[80], node[8];
 	struct v4l2_format fmt = {0};
@@ -155,7 +159,7 @@ v4l_capture_setup(int width, int height, int fps)
 	
 	if (cap_fd > 0) {
 		printf("capture device already opened\n");
-		return -1;
+		return 0;
 	}
 
 	strcat(v4l_device, DEV_CAPTURE);
@@ -181,13 +185,13 @@ v4l_capture_setup(int width, int height, int fps)
 	if (ioctl(cap_fd, VIDIOC_S_CTRL, &ctl) < 0)
 	{
 		printf("set control failed\n");
-		return -1;
+		goto fail;
 	}
 
 	mode = getCaptureMode(width, height);
 	if (mode == -1) {
 		printf("Not support the resolution in camera\n");
-		return -1;
+		goto fail;
 	}
 	printf("sensor frame size is %dx%d\n", sizes_buf[mode][0],
 					       sizes_buf[mode][1]);
@@ -198,26 +202,22 @@ v4l_capture_setup(int width, int height, int fps)
 	parm.parm.capture.capturemode = mode;
 	if (ioctl(cap_fd, VIDIOC_S_PARM, &parm) < 0) {
 		printf("set frame rate failed\n");
-		close(cap_fd);
-		cap_fd = -1;
-		return -1;
+		goto fail;
 	}
 
 	if (ioctl(cap_fd, VIDIOC_S_INPUT, &g_input) < 0) {
 		printf("VIDIOC_S_INPUT failed\n");
-		close(cap_fd);
-		return -1;
+		goto fail;
 	}
 
 	crop.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-	crop.c.width = width;
-	crop.c.height = height;
+	crop.c.width = ow;
+	crop.c.height = oh;
 	crop.c.top = 0;
 	crop.c.left = 0;
 	if (ioctl(cap_fd, VIDIOC_S_CROP, &crop) < 0) {
 		printf("VIDIOC_S_CROP failed\n");
-		close(cap_fd);
-		return -1;
+		goto fail;
 	}
 
 	fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
@@ -233,8 +233,7 @@ v4l_capture_setup(int width, int height, int fps)
 		fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_NV12;
 	if (ioctl(cap_fd, VIDIOC_S_FMT, &fmt) < 0) {
 		printf("set format failed\n");
-		close(cap_fd);
-		return -1;
+		goto fail;
 	}
 
 	memset(&req, 0, sizeof(req));
@@ -243,14 +242,19 @@ v4l_capture_setup(int width, int height, int fps)
 	req.memory = V4L2_MEMORY_MMAP;
 
 	if (ioctl(cap_fd, VIDIOC_REQBUFS, &req) < 0) {
-		printf("v4l_capture_setup: VIDIOC_REQBUFS failed\n");
+		printf("v4l_capture setup: VIDIOC_REQBUFS failed\n");
+		goto fail;
+	}
+	printf("v4l_capture setup end -------------> \n");
+
+	return 0;
+fail:
+	if( cap_fd > 0)
+	{
 		close(cap_fd);
 		cap_fd = -1;
 		return -1;
 	}
-	printf("v4l_capture_setup end -------------> \n");
-
-	return 0;
 }
 
 int
@@ -260,7 +264,7 @@ v4l_get_capture_data(struct v4l2_buffer *buf)
 	buf->type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 	buf->memory = V4L2_MEMORY_MMAP;
 	if (ioctl(cap_fd, VIDIOC_DQBUF, buf) < 0) {
-		printf("VIDIOC_DQBUF failed\n");
+	//	printf("VIDIOC_DQBUF failed\n");
 		return -1;
 	}
 
@@ -306,11 +310,11 @@ int v4l_fps_clac(void)
 
 }
 
-int video_capture_init(int frame_width,int frame_height,int fps)
+int video_capture_init(int frame_width,int frame_height,int ow, int oh, int fps)
 {
 	capture_calc_fps = fps;
-	if (v4l_capture_setup(frame_width,frame_height,fps) < 0) {
-		printf("v4l_capture_setup error \n");
+	if (v4l_capture_setup(frame_width,frame_height,ow,oh,fps) < 0) {
+		printf("v4l_capture setup error \n");
 		return -1;
 	}
 	return v4l_start_capturing();
@@ -323,6 +327,7 @@ void video_capture_destroy(void)
 
 int video_capture_read(char **data_ptr,int* data_len)
 {
+	static int errCount = 0;
 #ifdef H264_DECODE_LOCAL_FILE
 	static int bread = 0;
 	if( bread <= 0 ){
@@ -345,7 +350,8 @@ int video_capture_read(char **data_ptr,int* data_len)
 	struct v4l2_buffer buf;
 	
 	if ( v4l_get_capture_data(&buf) < 0 ) {
-		printf("capture error \n");
+		if( errCount++ % 1000 == 0)
+			printf("capture error \n");
 		*data_ptr = NULL;
 		*data_len = 0;
 		return 0;

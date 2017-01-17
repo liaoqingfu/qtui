@@ -27,8 +27,8 @@ ARM_STRIP           = $(CROSS_COMPILE)strip
 ARM_OBJCOPY         = $(CROSS_COMPILE)objcopy
 ARM_OBJDUMP         = $(CROSS_COMPILE)objdump
 
-CFLAGS          += -Wall 
-#CFLAGS          += -fPIC -shared
+CFLAGS          += -Wall -g 
+CFLAGSO          = -fPIC -shared
 #LDFLAGS += -fPIC -shared
 LDFLAGS = cr
 AFLAGS         := -D__ASSEMBLY__

@@ -20,8 +20,8 @@ public:
 
   
 protected:	
-	void keyPressEvent(QKeyEvent *event);  
-	void mousePressEvent(QGraphicsSceneMouseEvent *event);	
+//	void keyPressEvent(QKeyEvent *event);  
+//	void mousePressEvent(QGraphicsSceneMouseEvent *event);	
     void timerEvent( QTimerEvent *event );
 
     //void CallTypeShow( int callTypeNum);

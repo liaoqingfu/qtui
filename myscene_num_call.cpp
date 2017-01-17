@@ -32,55 +32,7 @@ void videoRead::run()
 	}
 }
 
-/*
 
-void myscene_num_call::CallTypeShow( int callTypeNum)
-{
-    if( callTypeNum == 0 ) {
-        label_numcall->show();
-        for(int i = 0; i < NUM_CALL; i++){
-           bt_numcall[i] ->show();
-        }
-         connect( bg_numcall ,SIGNAL(buttonClicked(int)), this, SLOT(bt_numcallClicked(int)));
-
-    }
-    else  if( callTypeNum == 1 ) {
-        label_numcall->hide();
-        str_numcall = "";
-
-        label_numcall->setText( str_numcall );
-        for(int i = 0; i < NUM_CALL; i++){
-           bt_numcall[i] ->hide();
-        }
-
-         if ( m_nTimerId != 0 )
-        	killTimer(m_nTimerId);
-		 m_nTimerId = 0;
-		 
-#if QT_CALL_API
-			video_init_err = 0;
-
-			if (video_capture_init( image_width, image_height, image_fps) < 0 ) {	
-				qDebug() << "video_capture_init fail\n";
-				video_init_err |= VIDEO_CAPTURE_ERR;
-			}
-			
-			if (h264_enc_init ( image_width, image_height, image_fps) < 0   ) {	
-				qDebug() << "h264_enc_init fail\n";
-				video_init_err |= VIDEO_H264_ENC_ERR;
-			}
-
-			
-			if ((h264_dec_ctx = h264_dec_init( )) == NULL)
-			{
-				printf("h264_dec_init fail\n");
-				video_init_err |= VIDEO_H264_DEC_ERR;
-			}
-#else
-			startVideoTest();
-#endif 
-    }
-}*/
 
 void  myscene_num_call::widget_init()
 {
@@ -168,13 +120,6 @@ void  myscene_num_call::widget_init()
 
 
 
-	//ipu_para_set(output_w, output_h, crop_x , crop_y, crop_w, crop_h, rotate);
-	
-	//ipu_para_set(1024,600,
-	//class videoRead vr;
-	//vr.start();
-
-
 }
 
 void myscene_num_call::bt_numcallClicked( int buttonID)
@@ -198,7 +143,7 @@ void myscene_num_call::bt_numcallClicked( int buttonID)
             }
             else if ( buttonID == 13) {
                qDebug() << "call to" << str_numcall;
-			   pmv->changeWindowType( WINDOW_TYPE_VIDEO_FUL ) ; ;
+			   pmv->changeWindowType( WINDOW_TYPE_VIDEO_FUL ) ; 
              //  CallTypeShow( (++call_type) % MAX_CALL_TYPE );
                
             }
@@ -210,6 +155,7 @@ void myscene_num_call::bt_numcallClicked( int buttonID)
                             label_bottom_status->setText( "" );
                        }
                    }
+			   pmv->changeWindowType( WINDOW_TYPE_MAIN) ; 
             }
 
             label_numcall->setText( str_numcall );
@@ -303,7 +249,8 @@ myscene_num_call::myscene_num_call(MyView * pm,QObject *parent) :
     timerEvent( new QTimerEvent(m_nTimerId) ) ;
 
 }  
-  
+	
+/*  
 void myscene_num_call::keyPressEvent(QKeyEvent *event)  
 {  
     //qDebug("**myscene_num_call::keyPress*");
@@ -314,5 +261,5 @@ void myscene_num_call::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {  
     qDebug("**myscene_num_call::mousePress*");
 	QGraphicsScene::mousePressEvent(event);  
-}  
+}  */
 

@@ -1,8 +1,8 @@
 [NCS3091AV]
 
 [terminal]
-id=1
-ip=192.168.1.101
+id=1012
+ip=192.168.1.102
 port=2046
 mask=255.255.255.0
 gate=192.168.1.1
@@ -49,22 +49,22 @@ tcp_enable=0
 
 [sip]
 enable=0
-ip=192.168.100.105
+ip=192.168.186.13
 port=5060
 target=996.
 sip_username=977
 sip_passwd=pincode977
 sip_port=5060
 sip_audio_rtp_port=7080
-sip_vedio_rtp_port=9080
+sip_video_rtp_port=9080
 
 [alone_cfg]
 enable=0
 talk_call_link=0
 alarm_call_link=2
-ip_keyleft=192.168.1.200
+ip_keyleft=1052
 port_keyleft=2046
-ip_keyright=192.168.1.200
+ip_keyright=1053
 port_keyright=2046
 
 [talk_cfg]
@@ -112,8 +112,8 @@ short_o2_time=20
 enable_removealarm=2
 link_removealarm=2
 signal_removealarm=2
-enable_noisealarm=1
-enable_speaker_test=1
+enable_noisealarm=0
+enable_speaker_test=0
 noise_alarm_vol=5
 noise_alarm_time=2
 audio_play_time=2
@@ -135,7 +135,7 @@ talk_alarm_prio=1
 [video_cfg]
 enable_onvif=1
 enable_wdr=1
-resolution=2
+resolution=1
 
 [web_cfg]
 username=admin

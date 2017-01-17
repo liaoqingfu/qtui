@@ -23,21 +23,84 @@ MyView::MyView(QWidget *parent) :
     tilePainter.end();
 
     setBackgroundBrush(tilePixmap);*/
+
+
     WindowType = WINDOW_TYPE_MAIN;
-	
-    scene_main = new myscene_main( this );
-	scene_main->setSceneRect(0,0,1024,600);//(0,0,(static_cast<QWidget *>600),(static_cast<QWidget *>600) );
-	this->setScene(scene_main);
 
     scene_video = new myscene_video( this );
 	scene_video->setSceneRect(0,0,1024,600);
+	
+	scene_calling = new myscene_calling( this );
+	scene_calling->setSceneRect(0,0,1024,600);
+
+	scene_list = new myscene_list( this );
+	scene_list->setSceneRect(0,0,1024,600);
+
+	scene_pic = new myscene_pic( this );
+	scene_pic->setSceneRect(0,0,1024,600);
 
     scene_num_call = new myscene_num_call( this );
 	scene_num_call->setSceneRect(0,0,1024,600);
+	
+    scene_main = new myscene_main( this );
+	scene_main->setSceneRect(0,0,1024,600);//(0,0,(static_cast<QWidget *>600),(static_cast<QWidget *>600) );
+	
+	this->setScene(scene_main);
 
+	
 	ReadAllSettings( );
 	
 }  
+
+
+void MyView::changeWindowType( int winType )
+{
+
+	if( WindowType != winType ) {
+		qDebug() << "<new scene %d\n>" << winType;
+		switch ( winType )
+		{
+			case WINDOW_TYPE_MAIN:	
+				this->setScene(scene_main);
+				break;
+				
+			case WINDOW_TYPE_CALLING:	
+				topWindowType = WINDOW_TYPE_MAIN;
+				
+				this->setScene(scene_calling);
+				break;
+			case WINDOW_TYPE_NUM_CALL:	
+				topWindowType = WINDOW_TYPE_MAIN;
+				this->setScene(scene_num_call);
+				break;
+			case WINDOW_TYPE_LIST_CALL:  
+				topWindowType = WINDOW_TYPE_MAIN;
+				this->setScene(scene_list);
+				break;
+			case WINDOW_TYPE_PIC_CALL:
+				topWindowType = WINDOW_TYPE_MAIN;
+				this->setScene(scene_pic);
+				break;
+			case WINDOW_TYPE_VIDEO_HALF: 
+				if( WindowType < WINDOW_TYPE_VIDEO_HALF )
+					topWindowType = WindowType;
+				this->setScene(scene_video);
+				break;
+			case WINDOW_TYPE_VIDEO_FUL:  
+				if( WindowType < WINDOW_TYPE_VIDEO_HALF )
+					topWindowType = WindowType;
+				this->setScene(scene_video);
+				scene_video->startVideo();
+				break;
+			default:
+				qDebug() << "<error : unknown WindowType>";
+				return ;
+		}
+	}
+	WindowType = winType;
+	
+}
+/*
 
 void MyView::keyPressEvent(QKeyEvent *event)  
 {  
@@ -56,46 +119,18 @@ void MyView::keyPressEvent(QKeyEvent *event)
 	}  
 	QGraphicsView::keyPressEvent(event);  
 }  
-void MyView::changeWindowType( int winType )
-{
-
-	switch ( winType )
-	{
-		case WINDOW_TYPE_MAIN:	
-			this->setScene(scene_main);;
-			break;
-		case WINDOW_TYPE_NUM_CALL:	
-			this->setScene(scene_num_call);;
-			break;
-		case WINDOW_TYPE_LIST_CALL:  
-			this->setScene(scene_num_call);;
-			break;
-		case WINDOW_TYPE_PIC_CALL:	
-			this->setScene(scene_num_call);;
-			break;
-		case WINDOW_TYPE_VIDEO_HALF: 
-			if( WindowType < WINDOW_TYPE_VIDEO_HALF )
-				topWindowType = WindowType;
-			this->setScene(scene_video);;
-			break;
-		case WINDOW_TYPE_VIDEO_FUL:  
-			if( WindowType < WINDOW_TYPE_VIDEO_HALF )
-				topWindowType = WindowType;
-			this->setScene(scene_video);;
-			break;
-		default:
-			qDebug() << "<error : unknown WindowType>";
-			return ;
-	}
-	WindowType = winType;
-	
-}
 
 void MyView::mousePressEvent(QMouseEvent *event)  
 {  
     qDebug("***MyView::mousePressEvent*");
 	QGraphicsView::mousePressEvent(event);
-}  
+} 
+void MyView::mouseMoveEvent(QMouseEvent *event)  
+{  
+	//qDebug("************MyView::mouseMoveEvent*****************");  
+	QGraphicsView::mouseMoveEvent(event);  
+} 
+
   
 void MyView::paintEvent(QPaintEvent *event)  
 {  
@@ -110,13 +145,7 @@ void MyView::paintEvent(QPaintEvent *event)
      painter.end();
 	QGraphicsView::paintEvent(event);  
 }  
-  
-void MyView::mouseMoveEvent(QMouseEvent *event)  
-{  
-	//qDebug("************MyView::mouseMoveEvent*****************");  
-	QGraphicsView::mouseMoveEvent(event);  
-} 
-
+  */
 
 void MyView::WriteSettings(QString sector, QString sItem,int value)
 {
@@ -174,7 +203,7 @@ void MyView::ReadAllSettings( )
 {
     QSettings settings(CFG_NAME, QSettings::IniFormat);
 	cfg.local_ip = settings.value( "terminal/ip" ).toString();
-	cfg.id = settings.value( "terminal/id" ).toInt();
+	cfg.localid = settings.value( "terminal/id" ).toString();
 
 	cfg.sip_ip = settings.value( "sip/ip" ).toString();
 	cfg.sip_username= settings.value( "sip/sip_username" ).toString();
@@ -186,10 +215,13 @@ void MyView::ReadAllSettings( )
 	cfg.port_keyright = settings.value( "alone_cfg/port_keyright" ).toInt();
 
 	
-	qDebug() << getLocalIp()  << " cfg.local_ip" << cfg.local_ip;
+	qDebug() << getLocalIp()  << " cfg.localid" << cfg.localid <<"cfg.ip_keyleft"<<cfg.ip_keyleft;
 
 	if( getLocalIp() != cfg.local_ip )
 		system_cmd_exec("ifconfig eth0 %s", cfg.local_ip.toLatin1().data());
+
+
+	scene_calling->sip_init_once( cfg.sip_ip.toLatin1().data() ,cfg.localid.toLatin1().data() );
 	
 	//QString str= "date -s " + year + month + day + hour + minute + "." + second;
     //system_cmd_exec(str.toLatin1().data());

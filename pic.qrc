@@ -20,5 +20,6 @@
         <file>main.bmp</file>
         <file>rightCall.bmp</file>
         <file>leftCall.bmp</file>
+        <file>calling.bmp</file>
     </qresource>
 </RCC>

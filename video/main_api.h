@@ -20,7 +20,7 @@ Retval;
 
 	int main_sequence_execute();
 	
-	int video_capture_init(int frame_width,int frame_height,int fps);
+	int video_capture_init(int frame_width,int frame_height,int ow, int oh, int fps);
 	void video_capture_destroy(void);
 	int video_capture_read(char **data_ptr,int* data_len);
 
@@ -42,7 +42,9 @@ Retval;
 	int gpio_set(int pin,int val);
 	int gpio_get(int pin);
 
+	void printf_log(int log_level, const char *fmt, ...); 
 
+	
 
 #ifdef __cplusplus
     }

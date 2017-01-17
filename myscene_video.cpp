@@ -27,27 +27,29 @@ void myscene_video::recv_slot()
 */
 void myscene_video::startVideo()
 {
-	if( pmv->WindowType >= WINDOW_TYPE_VIDEO_HALF )
+	if( bShowVideo == false )
 	{
 		setRunstate( 1 );
 		startVideoTest();
 		bt_stopCall->show();
+		bShowVideo = true;
 	}
 	else
-		qDebug() << "error call startVideo";
+		qDebug() << "error call startVideo,already in video state";
 
 }
 
 void myscene_video::stopVideo()
 {
-	if( pmv->WindowType >= WINDOW_TYPE_VIDEO_HALF )
+	if( bShowVideo == true )
 	{
 		setRunstate( 0 );
-		pmv->changeWindowType(pmv->topWindowType) ;
 		bt_stopCall->hide();
+		bShowVideo = false;
+		pmv->changeWindowType(pmv->topWindowType) ;
 	}
 	else
-		qDebug() << "error call stopVideo,bRun is 0";
+		qDebug() << "error call stopVideo,not in video state";
 
 }
 

@@ -5,6 +5,11 @@
 #include "myscene_main.h"
 #include "myscene_num_call.h"
 #include "myscene_video.h"
+#include "myscene_listcall.h"  
+#include "myscene_piccall.h"  
+#include "myscene_calling.h"  
+
+
 
 class MyView : public QGraphicsView  
 {  
@@ -14,6 +19,7 @@ public:
 	
 	int WindowType ;
 	int topWindowType;
+	myscene_calling * scene_calling;
 
     explicit MyView(QWidget *parent = 0);  
 	~MyView( );  
@@ -26,13 +32,15 @@ protected:
 	myscene_main *scene_main;
     myscene_num_call *scene_num_call;
 	myscene_video *scene_video;
+	myscene_list * scene_list;
+	myscene_pic * scene_pic;
 
 	
-    void keyPressEvent(QKeyEvent *event);  
-    void mousePressEvent(QMouseEvent *event);  
+//    void keyPressEvent(QKeyEvent *event);  
+//    void mousePressEvent(QMouseEvent *event);  
 	 
-    void paintEvent(QPaintEvent * event);  
-    void mouseMoveEvent(QMouseEvent *event);  
+//    void paintEvent(QPaintEvent * event);  
+//    void mouseMoveEvent(QMouseEvent *event);  
 signals:  
   
 public slots:  

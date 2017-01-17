@@ -51,7 +51,7 @@ typedef enum {
 } ipu_rotate_mode_t;
 */
 
-#define  show_frame_time
+//#define  show_frame_time
 
 typedef struct {
 	struct ipu_task task;
@@ -200,19 +200,19 @@ int rot_ipu_init( int in_wid, int in_height , int out_wid, int out_height )
 	t->input.format = v4l2_fourcc('Y', 'V', '1', '2');   // v4l2_fourcc('Y', 'U', 'Y', 'V');  //v4l2_fourcc('I', '4', '2', '0'); // v4l2_fourcc('Y', 'V', '1', '2');  //v4l2_fourcc('R','G','B','P');
 	t->input.crop.pos.x = 0;
 	t->input.crop.pos.y = 0;
-	t->input.crop.w = 0;
-	t->input.crop.h = 0;
+	//t->input.crop.w = 1024;
+	//t->input.crop.h = 600;
 	t->input.deinterlace.enable = 0;
 	t->input.deinterlace.motion = 0;
 
-	t->output.width = 1024;
-	t->output.height = 600;
-	t->output.format = v4l2_fourcc('R','G','B','P');  // v4l2_fourcc('Y', 'U', 'Y', 'V'); //v4l2_fourcc('Y', 'V', '1', '2'); //v4l2_fourcc('R','G','B','P');
-	t->output.rotate = 4;
+	t->output.width = 1024;  //out_wid;   //1024;
+	t->output.height = 600;  //out_height;  //600;
+	t->output.format = v4l2_fourcc('Y', 'V', '1', '2');   // v4l2_fourcc('Y', 'U', 'Y', 'V'); //v4l2_fourcc('Y', 'V', '1', '2'); //v4l2_fourcc('R','G','B','P');
+	t->output.rotate = 0;
 	t->output.crop.pos.x = 0;
 	t->output.crop.pos.y = 0;
-	t->output.crop.w = 0;
-	t->output.crop.h = 0;
+	t->output.crop.w = out_wid;
+	t->output.crop.h = out_height;
 
 	test_handle.show_to_fb = 1;
 
@@ -330,7 +330,6 @@ int rot_ipu(void * raw_image, int raw_len )
 	
 	ret = ioctl(fd_ipu, IPU_QUEUE_TASK, t);
 	if (ret < 0) {
-		printf("ioct IPU_QUEUE_TASK fail\n");
 		return -1;
 	}
 	

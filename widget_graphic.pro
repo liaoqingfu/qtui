@@ -12,10 +12,16 @@ QT  += network
 
 #QT += multimedia
 #QT += multimediawidgets
+
+
 TARGET = widget_graphic
 TEMPLATE = app
 INCLUDEPATH += /home/jack/Spon-Xserial/imx6/kernel/linux-imx/include/uapi/
 INCLUDEPATH += /home/jack/Spon-Xserial/imx6/kernel/linux-imx/include/
+#INCLUDEPATH +=  /home/jack/shareFile/qtApp/vertical_9171/sipua/include /home/jack/shareFile/qtApp/vertical_9171/sipua/include/eXosip2  /home/jack/shareFile/qtApp/vertical_9171/sipua/include/liblame  \
+#/home/jack/shareFile/qtApp/vertical_9171/sipua/include/libmad  /home/jack/shareFile/qtApp/vertical_9171/sipua/include/libresample  /home/jack/shareFile/qtApp/vertical_9171/sipua/include/ortp  \
+#/home/jack/shareFile/qtApp/vertical_9171/sipua/include/osip2  /home/jack/shareFile/qtApp/vertical_9171/sipua/include/osipparser2 /home/jack/shareFile/qtApp/vertical_9171/sipua/include/portaudio \
+#/home/jack/shareFile/qtApp/vertical_9171/sipua/include/osipparser2/headers
 
 SOURCES += main.cpp\
         widget.cpp \
@@ -39,7 +45,17 @@ SOURCES += main.cpp\
     myscene_video.cpp \
     myscene_num_call.cpp \
     myscene_main.cpp \
-    api/gpio.c
+    api/gpio.c \
+    myscene_piccall.cpp \
+    myscene_listcall.cpp \
+  #  sipua/XC9000UATest1.cpp \
+    myscene_calling.cpp
+
+
+
+
+
+
 
 HEADERS  += widget.h \
     myview.h \
@@ -63,9 +79,79 @@ HEADERS  += widget.h \
     myscene_video.h \
     myscene_num_call.h \
     myscene_main.h \
-    api/common.h
+    api/common.h \
+    myscene_piccall.h \
+    myscene_listcall.h \
+    myscene_calling.h
+
+
 
 FORMS    +=
 
 RESOURCES += \
     pic.qrc
+
+
+INCLUDEPATH += $$PWD/sipua/lib
+DEPENDPATH += $$PWD/sipua/lib
+
+
+
+win32:CONFIG(release, debug|release): LIBS += -L$$PWD/sipua/lib/release/ -lhello
+else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/sipua/lib/debug/ -lhello
+else:unix: LIBS += -L$$PWD/sipua/lib/ -lhello
+
+INCLUDEPATH += $$PWD/sipua/include
+DEPENDPATH += $$PWD/sipua/include
+
+win32:CONFIG(release, debug|release): LIBS += -L$$PWD/sipua/lib/release/ -lua
+else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/sipua/lib/debug/ -lua
+else:unix: LIBS += -L$$PWD/sipua/lib/ -lua
+
+
+win32:CONFIG(release, debug|release): LIBS += -L$$PWD/sipua/lib/release/ -lresample
+else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/sipua/lib/debug/ -lresample
+else:unix: LIBS += -L$$PWD/sipua/lib/ -lresample
+
+
+win32:CONFIG(release, debug|release): LIBS += -L$$PWD/sipua/lib/release/ -lportaudio
+else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/sipua/lib/debug/ -lportaudio
+else:unix: LIBS += -L$$PWD/sipua/lib/ -lportaudio
+
+
+win32:CONFIG(release, debug|release): LIBS += -L$$PWD/sipua/lib/release/ -losipparser2
+else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/sipua/lib/debug/ -losipparser2
+else:unix: LIBS += -L$$PWD/sipua/lib/ -losipparser2
+
+
+win32:CONFIG(release, debug|release): LIBS += -L$$PWD/sipua/lib/release/ -losip2
+else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/sipua/lib/debug/ -losip2
+else:unix: LIBS += -L$$PWD/sipua/lib/ -losip2
+
+
+win32:CONFIG(release, debug|release): LIBS += -L$$PWD/sipua/lib/release/ -lortp
+else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/sipua/lib/debug/ -lortp
+else:unix: LIBS += -L$$PWD/sipua/lib/ -lortp
+
+
+win32:CONFIG(release, debug|release): LIBS += -L$$PWD/sipua/lib/release/ -lmad
+else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/sipua/lib/debug/ -lmad
+else:unix: LIBS += -L$$PWD/sipua/lib/ -lmad
+
+
+win32:CONFIG(release, debug|release): LIBS += -L$$PWD/sipua/lib/release/ -llame
+else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/sipua/lib/debug/ -llame
+else:unix: LIBS += -L$$PWD/sipua/lib/ -llame
+
+
+win32:CONFIG(release, debug|release): LIBS += -L$$PWD/sipua/lib/release/ -leXosip2
+else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/sipua/lib/debug/ -leXosip2
+else:unix: LIBS += -L$$PWD/sipua/lib/ -leXosip2
+
+
+win32:CONFIG(release, debug|release): LIBS += -L$$PWD/sipua/lib/release/ -lasound
+else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/sipua/lib/debug/ -lasound
+else:unix: LIBS += -L$$PWD/sipua/lib/ -lasound
+
+DISTFILES +=
+

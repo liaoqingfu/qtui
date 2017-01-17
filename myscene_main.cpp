@@ -3,19 +3,13 @@
 #include "video/main_api.h"
 #include "myview.h" 
 
-//low lever to trig call
-#define LEFT_KEY  (4*32+20)  //CSI0_DATA_EN    5_20      left key
-#define RIGHT_KEY  (5*32+31)  //EIM_BCLK        6_31         right key
 
-#define LEFT_LED   (13)  //SD2_DATA2       1_13              left  led
-#define RIGHT_LED  (15)  //SD2_DATA0       1_15              right   led
-
-#define GPIO_IN   0
-#define GPIO_OUT   1
-
+#define HARD_KEY_TRIG  0
 
 extern ncs_cfg_t cfg;
+extern "C"  int _Z6xc9000v( );
 
+extern "C"  void pt( );
 
 
 void myscene_main::gpio_init(  )
@@ -134,15 +128,22 @@ void  myscene_main::widget_init()
 
 void  myscene_main::bt_leftCallClicked()
 {
-	pmv->changeWindowType( WINDOW_TYPE_NUM_CALL );
+	pmv->changeWindowType( WINDOW_TYPE_CALLING );
 	gpio_set( LEFT_LED , 1);
-	qDebug() << "bt_leftCallClicked" << cfg.ip_keyleft  << cfg.port_keyleft;
+	if( pmv->scene_calling->startCall( cfg.ip_keyleft.toLatin1().data()) > 0)
+		qDebug() << "bt_leftCallClicked" << cfg.ip_keyleft	<< cfg.port_keyleft;
+	else
+		pmv->changeWindowType( WINDOW_TYPE_MAIN);
 }
 
 void  myscene_main::bt_rightCallClicked( )
 {
+	pmv->changeWindowType( WINDOW_TYPE_CALLING );
 	gpio_set( RIGHT_LED , 1);
-	qDebug() << "bt_rightCallClicked" << cfg.ip_keyright << cfg.port_keyright;
+	if( pmv->scene_calling->startCall( cfg.ip_keyright.toLatin1().data()) > 0)
+		qDebug() << "bt_rightCallClicked" << cfg.ip_keyright << cfg.port_keyright;
+	else
+		pmv->changeWindowType( WINDOW_TYPE_MAIN);
 }
 
 	
@@ -176,12 +177,14 @@ void myscene_main::timerEvent( QTimerEvent *event )
 	static int minute = -1;
 	if( pmv->WindowType != WINDOW_TYPE_MAIN)
 		return;
-
+	
+#if  HARD_KEY_TRIG
 	if( gpio_get( LEFT_KEY ) == 0)
 		bt_leftCallClicked();
 
 	if( gpio_get( RIGHT_KEY ) == 0)
 		bt_rightCallClicked();
+#endif
 	
 	if( minute != qtimeObj.minute() ){
 		minute = qtimeObj.minute();

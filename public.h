@@ -14,7 +14,8 @@
 #include "QNetworkRequest"  
 #include "QRegExp"
 
-
+#include "QMouseEvent"
+#include <QProcess>
 
 #include "QPixmap"
 #include "QPushButton"
@@ -51,6 +52,16 @@
 #include "QToolTip"
 #include "api/common.h"
 
+#include<sys/types.h>
+#include<sys/stat.h>
+#include<errno.h>
+#include<fcntl.h>
+#include<stdio.h>
+#include<stdlib.h>
+#include<string.h>
+#include<pthread.h>
+
+
 #include <qmath.h>
 #define FRAME_FPS     15
 #define REF_TIME_MS  1000
@@ -75,6 +86,7 @@
 
 
 #define WINDOW_TYPE_MAIN     	  0
+
 #define WINDOW_TYPE_NUM_CALL      1
 #define WINDOW_TYPE_LIST_CALL     2
 #define WINDOW_TYPE_PIC_CALL      3
@@ -83,12 +95,23 @@
 
 #define WINDOW_TYPE_VIDEO_HALF    8
 #define WINDOW_TYPE_VIDEO_FUL 	  9
+#define WINDOW_TYPE_CALLING       10
 
+
+//low lever to trig call
+#define LEFT_KEY  (4*32+20)  //CSI0_DATA_EN    5_20      left key
+#define RIGHT_KEY  (5*32+31)  //EIM_BCLK        6_31         right key
+
+#define LEFT_LED   (13)  //SD2_DATA2       1_13              left  led
+#define RIGHT_LED  (15)  //SD2_DATA0       1_15              right   led
+
+#define GPIO_IN   0
+#define GPIO_OUT   1
 
 
 typedef struct {
 //[terminal]
-	int id;
+	QString localid;
 	QString local_ip;
 	int   port;
 	QString netmask;

@@ -34,6 +34,7 @@ public slots:
 
 private:
         void widget_init();
+		bool bShowVideo = false;
 
 		QUdpSocket *udpSocket;
         class MyView * pmv;
