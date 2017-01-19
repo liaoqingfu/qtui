@@ -1,0 +1,45 @@
+# Makefile
+#
+#CFLAGS          = -Wall  -O2
+ROOTDIR = ../../
+include $(ROOTDIR)/Rules.make 
+
+
+SRC  = $(wildcard *.c)
+OBJS = $(patsubst %.c,%.o,$(SRC))
+
+CPPSRC = $(wildcard *.cpp)
+CPPSRC += $(wildcard ./test/*.cpp)
+OBJS += $(patsubst %.cpp,%.o,$(CPPSRC))
+
+OBJS_OUT_DIR = ../linux_lib/arm/
+LINK_OBJS = $(patsubst %.o,$(OBJS_OUT_DIR)%.o,$(OBJS))
+
+LINK_LIB = ../linux_lib/arm/
+LDFLAGS =  -pthread  -lrt $(LINK_LIB)libeXosip2.so $(LINK_LIB)libosip2.so $(LINK_LIB)libosipparser2.so \
+		$(LINK_LIB)libortp.so $(LINK_LIB)libportaudio.so $(LINK_LIB)libmad.so \
+		$(LINK_LIB)liblame.so  $(LINK_LIB)libresample.so #../linux_lib/pc/libua.so #-losip2 -losipparser2 -lortp -lportaudio -lua
+#LDFLAGS = ../Release/libresample.a 
+INCLUDE_PATH = -I../include -I../include/eXosip2  -I../include/liblame  \
+-I../include/libmad  -I../include/libresample  -I../include/ortp  \
+-I../include/osip2  -I../include/osipparser2 -I../include/portaudio \
+-I../include/osipparser2/headers  -I../ -I./
+
+TARGET = main
+
+all:$(TARGET)
+
+%.o:%.cpp
+	$(ARM_CC) $(INCLUDE_PATH) $(CFLAGS)  -c $< -o $(OBJS_OUT_DIR) $@ 
+%.o:%.c
+	$(ARM_CC) $(INCLUDE_PATH) $(CFLAGS)  -c $< -o $(OBJS_OUT_DIR) $@ 
+
+
+$(TARGET):$(OBJS)  
+	$(ARM_CC) -o $@ $(LINK_OBJS)  $(LDFLAGS) -lstdc++    -lm 
+clean:  
+	rm -f $(LINK_OBJS) 
+ 
+
+
+

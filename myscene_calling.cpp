@@ -43,10 +43,11 @@ void * capture_thread(void * pParam)
 	myscene_calling * pMysceneCalling = ( myscene_calling * )pParam;
 	while(1)
 	{
-		if( frameCount++ % 200 == 0)
-			printf_log(LOG_IS_INFO, " Cap-thread frame:%d\n",frameCount);
 		
 		if (video_capture_read(&cap_buf,&cap_len) > 0) {
+			if( frameCount++ % 200 == 0)
+			printf_log(LOG_IS_INFO, " Cap-thread frame,w:%d\n",frameCount);
+			
 			enc_re_len = h264_enc_process(cap_buf, cap_len,&enc_re_data_ptr);	//lhg comment:	yuv --->h264 (data_ptr)
 			pMysceneCalling->sip_ua_1->m_video_stream.write_rtp_senddata( ( unsigned char*) enc_re_data_ptr, enc_re_len);
 
@@ -75,9 +76,11 @@ void  dec_callback(void * pParam)
 		myscene_calling * pMysceneCalling = ( myscene_calling * )pParam;
 		unsigned char  pH264RecvBuf[VIDEO_RTP_FRAME_LEN_MAX];
 		nPayloadSize = pMysceneCalling->sip_ua_1->m_video_stream.read_rtp_recvdata(pH264RecvBuf, VIDEO_RTP_FRAME_LEN_MAX);
-		if( nPayloadSize > 0 )
+		while( nPayloadSize > 0 )
+		{
 			h264_dec_run(pMysceneCalling->h264_dec_ctx , (char *)pH264RecvBuf, nPayloadSize);
-	
+			nPayloadSize = pMysceneCalling->sip_ua_1->m_video_stream.read_rtp_recvdata(pH264RecvBuf, VIDEO_RTP_FRAME_LEN_MAX);
+		}
 	}
 }
 

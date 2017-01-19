@@ -26,7 +26,7 @@ bool Application::notify(QObject *obj, QEvent *e)
 	if( (e->type() == QEvent::MouseButtonPress) ) {
 		if ( (wt < WINDOW_TYPE_VIDEO_HALF)  ){
 			pos = mouseEvent->globalPos();
-			qDebug() << "Press" << pos.x() << pos.y();
+			//qDebug() << "P:" << pos.x() << pos.y();
 		}
 	 	else  if ( (wt <= WINDOW_TYPE_VIDEO_FUL)  ) //video :  half window ,  full window switch
 	 	{
@@ -62,7 +62,7 @@ bool Application::notify(QObject *obj, QEvent *e)
 				wt = (wt + 1) % WINDOW_TYPE_MAX_UI;
 			else if( pos_dis.y() < -YDIS_INTERVAL)
 				wt = (wt + WINDOW_TYPE_MAX_UI - 1) % WINDOW_TYPE_MAX_UI;
-			qDebug() << "Release" << pos.x()<< pos.y()<< wt;
+			qDebug() << "R:" << pos.x()<< pos.y()<< wt;
 
 			pview->changeWindowType( wt );
 		}

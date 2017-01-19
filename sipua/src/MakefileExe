@@ -1,0 +1,39 @@
+# Makefile
+#
+#CFLAGS          = -Wall  -O2
+ROOTDIR = ../
+include $(ROOTDIR)/Rules.make 
+
+
+SRC  = $(wildcard *.c)
+OBJS = $(patsubst %.c,%.o,$(SRC))
+
+CPPSRC = $(wildcard *.cpp)
+CPPSRC += $(wildcard ./test/*.cpp)
+OBJS += $(patsubst %.cpp,%.o,$(CPPSRC))
+
+LDFLAGS = -L../linux_lib/pc -pthread  -lrt -lcurses ../linux_lib/pc/libeXosip2.so ../linux_lib/pc/libosip2.so ../linux_lib/pc/libosipparser2.so \
+		../linux_lib/pc/libortp.so ../linux_lib/pc/libportaudio.so ../linux_lib/pc/libmad.so \
+		../linux_lib/pc/liblame.so ../linux_lib/pc/libresample.so #../linux_lib/pc/libua.so #-losip2 -losipparser2 -lortp -lportaudio -lua
+#LDFLAGS = ../Release/libresample.a 
+INCLUDE_PATH = -I../include -I../include/eXosip2  -I../include/liblame  \
+-I../include/libmad  -I../include/libresample  -I../include/ortp  \
+-I../include/osip2  -I../include/osipparser2 -I../include/portaudio \
+-I../include/osipparser2/headers  -I../ -I./
+
+.PHONY:main
+
+main:$(OBJS)
+	$(CC) -o $@ $(OBJS)  $(LDFLAGS) -lstdc++    -lm
+
+%.o:%.cpp
+	$(CC) $(INCLUDE_PATH)  -c $< -o $@ 
+%.o:%.c
+	$(CC) $(INCLUDE_PATH)  -c $< -o $@ 
+
+clean:  
+	rm -f $(OBJS) 
+ 
+
+
+

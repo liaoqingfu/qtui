@@ -57,7 +57,7 @@ void MyView::changeWindowType( int winType )
 {
 
 	if( WindowType != winType ) {
-		qDebug() << "<new scene %d\n>" << winType;
+		qDebug() << "<scene:>" << winType;
 		switch ( winType )
 		{
 			case WINDOW_TYPE_MAIN:	

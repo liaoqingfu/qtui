@@ -86,7 +86,7 @@ void  myscene_main::widget_init()
     label_time->setPalette(pe);
     label_time->setAttribute(Qt::WA_TranslucentBackground); 
     label_time->setFont( QFont(FONE_NAME, 40) );
-    label_time->move(180,400);
+    label_time->setGeometry(180,400,300,150);
     proxy = this->addWidget(label_time);
     proxy->setRotation(-90);
 
@@ -96,7 +96,7 @@ void  myscene_main::widget_init()
 	label_date->setPalette(pe);
 	label_date->setAttribute(Qt::WA_TranslucentBackground); 
 	label_date->setFont( QFont(FONE_NAME, 25) );
-	label_date->move(250,470);
+	label_date->setGeometry(250,470,400,150);
 	proxy = this->addWidget(label_date);
 	proxy->setRotation(-90);
 
