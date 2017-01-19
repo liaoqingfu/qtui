@@ -79,6 +79,8 @@ private:
 	QNetworkAccessManager manager;
 
 	pthread_t pid_capture;  //camera capture thread
+	int cap_pic_width, cap_pic_height;
+	int crop_pic_width, crop_pic_height;
 
   
 };	

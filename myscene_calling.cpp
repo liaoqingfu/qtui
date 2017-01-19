@@ -8,9 +8,18 @@
 
 #define VIDEO_RTP_FRAME_LEN_MAX		(1024*40)
 #define VIDEO_ENABLE  1
-#define LOCAL_VIDEO_DISPLAY
+//#define LOCAL_VIDEO_DISPLAY
 
 #define HARD_KEY_TRIG  0
+
+#define CAPTURE_WIDTH  1280
+#define CAPTURE_HEIGHT 720
+
+#define CAPTURE_OUT_WIDTH   1024
+#define CAPTURE_OUT_HEIGHT  600
+
+
+
 
 extern ncs_cfg_t cfg;
 extern "C"  int _Z6xc9000v( );
@@ -34,8 +43,8 @@ void * capture_thread(void * pParam)
 	myscene_calling * pMysceneCalling = ( myscene_calling * )pParam;
 	while(1)
 	{
-		if( frameCount++ % 100 == 0)
-			printf_log(LOG_IS_INFO, " Capture thread frameCount:%d\n",frameCount);
+		if( frameCount++ % 200 == 0)
+			printf_log(LOG_IS_INFO, " Cap-thread frame:%d\n",frameCount);
 		
 		if (video_capture_read(&cap_buf,&cap_len) > 0) {
 			enc_re_len = h264_enc_process(cap_buf, cap_len,&enc_re_data_ptr);	//lhg comment:	yuv --->h264 (data_ptr)
@@ -187,6 +196,10 @@ int myscene_calling::sip_init_once( char * sipServerIp, char * localId)
 		return -1;
 
 	printf("serverip:%s, localId:%s\n",sipServerIp, localId);
+	cap_pic_width = cfg.xres; 
+	cap_pic_height = cfg.yres;
+	crop_pic_width = cfg.xres;   //cfg.screen_xres +8; 
+	crop_pic_height = cfg.yres; //cfg.screen_yres;
 	
 	sip_ua_1 = new CSipUA;
 	
@@ -221,7 +234,7 @@ int myscene_calling::sip_init_once( char * sipServerIp, char * localId)
 		return -1;
 	}
 
-	if (h264_enc_init ( 352, 288,  25) < 0   ) {	//352, 288,      640, 480,
+	if (h264_enc_init ( crop_pic_width, crop_pic_height,  25) < 0   ) {	//352, 288,      640, 480,
 		printf_log(LOG_IS_INFO,"h264_enc_init fail\n");
 		video_init_error += 2;
 		return -1;
@@ -238,7 +251,8 @@ void myscene_calling::startCapture(  )
 	//if( SipTalkType == CALL_VIDEO_OUT)
 	{
 		if(!video_init_error ) {
-			if (video_capture_init( 352, 288, 352, 288,  25) >= 0 ) {
+			//capture width,height,   crop width  , height
+			if (video_capture_init( cap_pic_width, cap_pic_height, crop_pic_width, crop_pic_height,  25) >= 0 ) {
 				if (pthread_create(&pid_capture, NULL, capture_thread, this) >= 0)
 				{
 					sip_ua_1->set_enable_rtp_video(TRUE);

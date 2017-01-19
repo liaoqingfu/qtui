@@ -28,6 +28,7 @@
 #include <sys/mman.h>
 #include "vpu_lib.h"
 #include "imxvpuapi.h"
+#include <linux/ipu.h>
 
 
 #define  SIMULATE_DECODE
@@ -61,7 +62,9 @@ static int screensize = 0;
 	static 	FILE * fd_y_file3 = 0;
 #endif
 
-
+extern unsigned int fmt_to_bpp(unsigned int pixelformat);
+extern void Yuv420p2Rgb32(const char *yuvBuffer_in,const char *rgbBuffer_out,int width,int height);
+static char rgbBuf[600*1024*4];
 
 #ifdef DECODE_DIRECT_TO_FB 
 int fb_out( int operation)  //0:init   1:refresh   2 : close
@@ -99,11 +102,11 @@ int fb_out( int operation)  //0:init   1:refresh   2 : close
 		fb_var.xres_virtual = fb_var.xres;
 		//fb_var.yres = 600;
 		fb_var.yres_virtual = fb_var.yres;
-		/*fb_var.activate |= FB_ACTIVATE_FORCE;
+	/*	fb_var.activate |= FB_ACTIVATE_FORCE;
 		fb_var.vmode |= FB_VMODE_YWRAP;
-		fb_var.nonstd = t->output.format;
-		fb_var.bits_per_pixel = fmt_to_bpp(t->output.format);
-		*/
+		fb_var.nonstd = IPU_PIX_FMT_YUV420P;
+		fb_var.bits_per_pixel = fmt_to_bpp(IPU_PIX_FMT_YUV420P);
+	*/	
 		ret = ioctl(fd_fb0, FBIOPUT_VSCREENINFO, &fb_var);
 		if (ret < 0) {
 			printf("fb ioctl FBIOPUT_VSCREENINFO fail\n");
@@ -114,7 +117,7 @@ int fb_out( int operation)  //0:init   1:refresh   2 : close
 		ioctl(fd_fb0, FBIOGET_FSCREENINFO, &fb_fix);
 
 		printf("fb_var.xres:%d £¬ fb_var.yres:%d , fb_fix.line_length:%d", fb_var.xres, fb_var.yres, fb_fix.line_length);
-		screensize = fb_var.xres * fb_var.yres *3/2;
+		screensize = fb_var.xres * fb_var.yres * 4; //3/2;
 		outpaddr[0] = mmap(NULL,screensize,PROT_READ|PROT_WRITE,MAP_SHARED,fd_fb0,0);
 		/*
 		for (i=0; i<FB_BUFS; i++)
@@ -256,6 +259,8 @@ ImxVpuFramebuffer *rotate_framebuffers;
 ImxVpuDMABuffer *rotate_fb_dmabuffers;
 FrameBuffer *rotate_internal_fb;
 
+static int ipu_fb_init = 0;
+
 int initial_info_callback(ImxVpuDecoder *decoder, ImxVpuDecInitialInfo *new_initial_info, unsigned int output_code, void *user_data)
 {
 	unsigned int i;
@@ -271,7 +276,7 @@ int initial_info_callback(ImxVpuDecoder *decoder, ImxVpuDecInitialInfo *new_init
 
 	fprintf(
 		stderr,
-		"initial info:  size: %ux%u pixel  rate: %u/%u  min num required framebuffers: %u  interlacing: %d  framebuffer alignment: %u\n",
+		"dec  initial info:  size: %ux%u pixel  rate: %u/%u  min num required framebuffers: %u  interlacing: %d  framebuffer alignment: %u\n",
 		ctx->initial_info.frame_width,
 		ctx->initial_info.frame_height,
 		ctx->initial_info.frame_rate_numerator,
@@ -284,7 +289,7 @@ int initial_info_callback(ImxVpuDecoder *decoder, ImxVpuDecInitialInfo *new_init
 #ifdef DECODE_DIRECT_TO_FB 
 	fb_out( FB_INIT );  //lhg direct output 
 #else
-	rot_ipu_init(ctx->initial_info.frame_width,	ctx->initial_info.frame_height,ctx->initial_info.frame_width,	ctx->initial_info.frame_height);     //ipu rotate, then output
+	ipu_fb_init = rot_ipu_init(ctx->initial_info.frame_width,	ctx->initial_info.frame_height,ctx->initial_info.frame_width,	ctx->initial_info.frame_height);     //ipu rotate, then output
 #endif
 	ctx->num_framebuffers = ctx->initial_info.min_num_required_framebuffers;
 
@@ -301,7 +306,7 @@ int initial_info_callback(ImxVpuDecoder *decoder, ImxVpuDecInitialInfo *new_init
 
 	fprintf(
 		stderr,
-		"calculated sizes:  frame width&height: %dx%d  Y stride: %u  CbCr stride: %u  Y size: %u  CbCr size: %u  MvCol size: %u  total size: %u,ctx->initial_info.color_format:%d\n",
+		"dec calculated sizes:  frame width&height: %dx%d  Y stride: %u  CbCr stride: %u  Y size: %u  CbCr size: %u  MvCol size: %u  total size: %u,ctx->initial_info.color_format:%d\n",
 		ctx->calculated_sizes.aligned_frame_width, ctx->calculated_sizes.aligned_frame_height,
 		ctx->calculated_sizes.y_stride, ctx->calculated_sizes.cbcr_stride,
 		ctx->calculated_sizes.y_size, ctx->calculated_sizes.cbcr_size, ctx->calculated_sizes.mvcol_size,
@@ -449,6 +454,7 @@ static int h264_decode_frame(h264_dec_Context *ctx)
 	unsigned int output_code;
 	ImxVpuDecReturnCodes ret;
 	char decodeFileName[128];
+	int i;
 	
 
 	if (imx_vpu_dec_is_drain_mode_enabled(ctx->vpudec))
@@ -591,10 +597,15 @@ static int h264_decode_frame(h264_dec_Context *ctx)
 		mapped_virtual_address = imx_vpu_dma_buffer_map(decoded_frame.framebuffer->dma_buffer, IMX_VPU_MAPPING_FLAG_READ);
 
 #ifdef DECODE_DIRECT_TO_FB 
-		memcpy( outpaddr[0] , mapped_virtual_address , num_out_byte < screensize ? num_out_byte : screensize);
+		Yuv420p2Rgb32(mapped_virtual_address,rgbBuf,640,480);
+		for(i =0; i < 480; i++)
+			memcpy( ((char *)outpaddr[0]) + i*1024*4, rgbBuf + i*640*4, 640*4);
+		
+		//memcpy( outpaddr[0] , mapped_virtual_address , num_out_byte < screensize ? num_out_byte : screensize);
 		fb_out( FB_FRESH );
 #else
-		rot_ipu( (void *)mapped_virtual_address , num_out_byte);
+		//if( ipu_fb_init > 0)
+			rot_ipu( (void *)mapped_virtual_address , num_out_byte);
 #endif
 				
 		#ifdef h264_decode_saveFile

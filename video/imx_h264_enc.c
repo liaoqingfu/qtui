@@ -212,7 +212,7 @@ Context* h264_enc_ctx_init(Context *ctx,int frame_width,int frame_height,int fps
 	imx_vpu_calc_framebuffer_sizes(IMX_VPU_COLOR_FORMAT_YUV420, frame_width, frame_height, ctx->initial_info.framebuffer_alignment, 0, 0, &(ctx->calculated_sizes));
 	fprintf(
 		stderr,
-		"calculated sizes:  frame width&height: %dx%d  Y stride: %u  CbCr stride: %u  Y size: %u  CbCr size: %u  MvCol size: %u  total size: %u\n",
+		"enc calculated sizes:  frame width&height: %dx%d  Y stride: %u  CbCr stride: %u  Y size: %u  CbCr size: %u  MvCol size: %u  total size: %u\n",
 		ctx->calculated_sizes.aligned_frame_width, ctx->calculated_sizes.aligned_frame_height,
 		ctx->calculated_sizes.y_stride, ctx->calculated_sizes.cbcr_stride,
 		ctx->calculated_sizes.y_size, ctx->calculated_sizes.cbcr_size, ctx->calculated_sizes.mvcol_size,

@@ -60,7 +60,7 @@ void  myscene_main::widget_init()
 {
 	qDebug() << "myscene_main widget_init"; 
 
-	verifyTime();
+	//verifyTime();
 
     QGraphicsProxyWidget * proxy ;
 
@@ -120,7 +120,7 @@ void  myscene_main::widget_init()
 	connect( bt_rightCall ,SIGNAL(clicked( )), this, SLOT(bt_rightCallClicked( )));
 
 	m_nTimerId = startTimer(1000);  
-    timerEvent( new QTimerEvent(m_nTimerId) ) ;
+   // timerEvent( new QTimerEvent(m_nTimerId) ) ;
 
 	gpio_init(  );
 
@@ -177,6 +177,7 @@ void myscene_main::timerEvent( QTimerEvent *event )
 	static int minute = -1;
 	if( pmv->WindowType != WINDOW_TYPE_MAIN)
 		return;
+
 	
 #if  HARD_KEY_TRIG
 	if( gpio_get( LEFT_KEY ) == 0)

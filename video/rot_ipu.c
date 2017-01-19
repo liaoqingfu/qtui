@@ -27,15 +27,11 @@
 #include <linux/ipu.h>
 #include<errno.h>
 
-//#define VIDEO_TO_QT
-#define FIFO_QT_VIDEO  "/tmp/qt_video"
-static  int fd_qt;
 
-struct QT_VIDEO_BUF{
-	char * buf ;
-	int width ;
-	int height;
-};
+//#define IPU_TO_FB_DIRECT 1
+#define  SHOW_FRAME_RATE
+
+
 
 /*
 typedef enum {
@@ -51,7 +47,6 @@ typedef enum {
 } ipu_rotate_mode_t;
 */
 
-//#define  show_frame_time
 
 typedef struct {
 	struct ipu_task task;
@@ -66,15 +61,52 @@ typedef struct {
 #define PAGE_ALIGN(x) (((x) + 4095) & ~4095)
 
 int ctrl_c_rev = 0;
+static int fb_max_len = 0;
 
-void ctrl_c_handler(int signum, siginfo_t *info, void *myact)
+
+typedef unsigned char BYTE;
+ 
+typedef struct RGB32 {
+  BYTE    rgbBlue;      // 蓝色分量
+  BYTE    rgbGreen;     // 绿色分量
+  BYTE    rgbRed;       // 红色分量
+  BYTE    rgbReserved;  // 保留字节（用作Alpha通道或忽略）
+} RGB32;
+
+
+void Yuv420p2Rgb32(const BYTE *yuvBuffer_in,const BYTE *rgbBuffer_out,int width,int height)
 {
-	ctrl_c_rev = 1;
+    BYTE *yuvBuffer = (BYTE *)yuvBuffer_in;
+    RGB32 *rgb32Buffer = (RGB32 *)rgbBuffer_out;
+ 	int y = 0;
+	int x = 0;
+    for ( y = 0; y < height; y++)
+    {
+        for ( x = 0; x < width; x++)
+        {
+            int index = y * width + x;
+ 
+            int indexY = y * width + x;
+            int indexU = width * height + y / 2 * width / 2 + x / 2;
+            int indexV = width * height + width * height / 4 + y / 2 * width / 2 + x / 2;
+ 
+            BYTE Y = yuvBuffer[indexY];
+            BYTE U = yuvBuffer[indexU];
+            BYTE V = yuvBuffer[indexV];
+ 
+            RGB32 *rgbNode = &rgb32Buffer[index];
+ 
+            ///这转换的公式 百度有好多 下面这个效果相对好一些
+ 
+            rgbNode->rgbRed = Y + 1.402 * (V-128);
+            rgbNode->rgbGreen = Y - 0.34413 * (U-128) - 0.71414*(V-128);
+            rgbNode->rgbBlue = Y + 1.772*(U-128);
+        }
+    }
 }
 
-int fd_fb_alloc = 0;
 
-static unsigned int fmt_to_bpp(unsigned int pixelformat)
+unsigned int fmt_to_bpp(unsigned int pixelformat)
 {
         unsigned int bpp;
 
@@ -122,7 +154,9 @@ static 	struct ipu_task *t = &test_handle.task;
 static  int fd_ipu = 0, fd_fb = 0;
 static 	int isize = 0;
 static 	void *inbuf = NULL;
+static 	void *ipuUserPaddr = NULL;   // user space p-address
 static 	void  * fd_buf;
+static  int   bFullScreenVideo = 0;
 
 
 void ipu_para_set (int w, int h, int cx,        int cy, int cw, int ch, int rotate)
@@ -174,21 +208,24 @@ void rot_ipu_uninit()
 	}
 
 }
+
+
 int rot_ipu_init( int in_wid, int in_height , int out_wid, int out_height )
 {
-	int ret = 0, done_cnt = 0, i = 0 ;
+	int ret = 1, done_cnt = 0, i = 0 ;
 	
-	dma_addr_t outpaddr[FB_BUFS];
 	struct fb_var_screeninfo fb_var;
 	struct fb_fix_screeninfo fb_fix;
 	int blank;
+	dma_addr_t fb_Paddr[FB_BUFS];
 
 	
 
 
 	// Cleaning the test_handle struct
 	memset(&test_handle, 0, sizeof(ipu_test_handle_t));
-
+	
+	bFullScreenVideo = 0;
 	// Default Settings
 	t->priority = 0;
 	t->task_id = 0;
@@ -197,29 +234,41 @@ int rot_ipu_init( int in_wid, int in_height , int out_wid, int out_height )
 	test_handle.loop_cnt = 1;
 	t->input.width = in_wid;
 	t->input.height = in_height;
-	t->input.format = v4l2_fourcc('Y', 'V', '1', '2');   // v4l2_fourcc('Y', 'U', 'Y', 'V');  //v4l2_fourcc('I', '4', '2', '0'); // v4l2_fourcc('Y', 'V', '1', '2');  //v4l2_fourcc('R','G','B','P');
+	//yv12:   yvu420
+	t->input.format = v4l2_fourcc('Y', 'U', '1', '2');// v4l2_fourcc('Y', 'V', '1', '2');   // v4l2_fourcc('Y', 'U', 'Y', 'V');  //v4l2_fourcc('I', '4', '2', '0'); // v4l2_fourcc('Y', 'V', '1', '2');  //v4l2_fourcc('R','G','B','P');
 	t->input.crop.pos.x = 0;
 	t->input.crop.pos.y = 0;
-	//t->input.crop.w = 1024;
-	//t->input.crop.h = 600;
+	if( (in_wid >= 1024) && (in_height >= 600) ) {
+		t->input.crop.w = 1024;
+		t->input.crop.h = 600;
+	}
+	
 	t->input.deinterlace.enable = 0;
 	t->input.deinterlace.motion = 0;
 
-	t->output.width = 1024;  //out_wid;   //1024;
-	t->output.height = 600;  //out_height;  //600;
-	t->output.format = v4l2_fourcc('Y', 'V', '1', '2');   // v4l2_fourcc('Y', 'U', 'Y', 'V'); //v4l2_fourcc('Y', 'V', '1', '2'); //v4l2_fourcc('R','G','B','P');
+	if( (out_wid >= 1024) && (out_height >= 600) ) {
+		bFullScreenVideo = 1;
+		t->output.width = 1024;
+		t->output.height = 600;
+	}
+	else {
+		t->output.width = out_wid ;  //out_wid;   //1024;
+		t->output.height = out_height ;  //out_height;  //600;
+	}
+	
+	t->output.format = IPU_PIX_FMT_BGRA32 ; //v4l2_fourcc('Y', 'U', '1', '2'); // IPU_PIX_FMT_BGRA32    v4l2_fourcc('R','G','B','P'); //v4l2_fourcc('Y', 'V', '1', '2');  // v4l2_fourcc('Y', 'U', 'Y', 'V'); //v4l2_fourcc('Y', 'V', '1', '2'); //v4l2_fourcc('R','G','B','P');
 	t->output.rotate = 0;
 	t->output.crop.pos.x = 0;
 	t->output.crop.pos.y = 0;
-	t->output.crop.w = out_wid;
-	t->output.crop.h = out_height;
+	t->output.crop.w = 0; // 0;//1024;
+	t->output.crop.h = 0;  //0;//600;
 
 	test_handle.show_to_fb = 1;
 
 	fd_ipu = open("/dev/mxc_ipu", O_RDWR, 0);
 	if (fd_ipu < 0) {
 		printf("open ipu dev fail\n");
-		ret = -1;
+		ret = 0;
 		goto done;
 	}
 
@@ -235,50 +284,40 @@ int rot_ipu_init( int in_wid, int in_height , int out_wid, int out_height )
 	
 	if (ret < 0) {
 		printf("ioctl IPU_ALLOC fail\n");
+		ret = 0;
 		goto done;
 	}
+
 
 	// Map the IPU input buffer
 	inbuf = mmap(0, isize, PROT_READ | PROT_WRITE,
 		MAP_SHARED, fd_ipu, t->input.paddr);
 	if (!inbuf) {
 		printf("mmap fail\n");
-		ret = -1;
+		ret = 0;
 		goto done;
 	}
 
 	if ((fd_fb = open("/dev/fb0", O_RDWR, 0)) < 0) {
 		printf("Unable to open /dev/fb0\n");
-		ret = -1;
+		ret = 0;
 		goto done;
 	}
 
 	if ( ioctl(fd_fb, FBIOGET_FSCREENINFO, &fb_fix) < 0) {
 		printf("Get FB fix info failed!\n");
-		ret = -1;
+		ret = 0;
 		goto done;
 	}
 	if ( ioctl(fd_fb, FBIOGET_VSCREENINFO, &fb_var) < 0) {
 			printf("Get FB var info failed!\n");
-			ret = -1;
+			ret = 0;
 			goto done;
 		}
-	
-	ioctl(fd_fb, FBIOGET_VSCREENINFO, &fb_var);
-	ioctl(fd_fb, FBIOGET_FSCREENINFO, &fb_fix);
-
-
-	//printf("enter crop input width, height\n");
-	//scanf("%d %d",&(t->input.crop.w),&(t->input.crop.h) );
-
-
-	//printf("enter crop output crop x,y,w,h\n");
-	//scanf("%d %d %d %d",&(t->output.crop.pos.x),&(t->output.crop.pos.y),&(t->output.crop.w),&(t->output.crop.h) );
-
-	printf("ipu t->input.crop.w:%d, t->input.crop.h:%d!,isize:%d\n",t->input.crop.w , t->input.crop.h , isize);
+	printf("ipu t->input.width:%d, t->output.width:%d!,isize:%d\n",t->input.width , t->output.width , isize);
 
 	for (i=0; i<FB_BUFS; i++)
-		outpaddr[i] = fb_fix.smem_start +
+		fb_Paddr[i] = fb_fix.smem_start +
 			i * fb_var.yres * fb_fix.line_length;
 
 	// Unblank the display
@@ -292,59 +331,78 @@ int rot_ipu_init( int in_wid, int in_height , int out_wid, int out_height )
 	}
 	else
 		i = t->output.width*t->output.height*3/2;
-/*
-	fd_buf = mmap(NULL, i , PROT_READ | PROT_WRITE, MAP_SHARED,
-			fd_fb, 0);
-	if (fd_buf == MAP_FAILED) {
-		printf("fd_buf mmap failed!\n");
-		ret = -1;
-		goto done;
-	}*/
-	
-	t->output.paddr = outpaddr[done_cnt % FB_BUFS];
-	
-	return 0;
+
+	if( bFullScreenVideo )
+		t->output.paddr = fb_Paddr[0];  //ipu direct to framebuff ,   
+	else{	
+		t->output.paddr = fb_max_len = fb_fix.smem_len;
+		ret = ioctl(fd_ipu, IPU_ALLOC, &t->output.paddr);//input size , output phyadd
+		
+		if (ret < 0) {
+			printf("ioctl IPU_ALLOC fail\n");
+			ret = 0;
+			goto done;
+		}
+
+		ipuUserPaddr = mmap(0, fb_max_len, PROT_READ | PROT_WRITE,
+			MAP_SHARED, fd_ipu, t->output.paddr);
+		if (!ipuUserPaddr) {
+			printf(" ipu User Paddr mmap fail\n");
+			ret = 0;
+			goto done;
+		}
+
+		fd_buf = mmap(NULL, fb_max_len , PROT_READ | PROT_WRITE, MAP_SHARED,
+				fd_fb, 0);
+		if (fd_buf == MAP_FAILED) {
+			printf("fd_buf mmap failed!\n");
+			ret = 0;
+			goto done;
+		} 
+	}
+
+	return 1;
 
 done:
 	rot_ipu_uninit();
-	return -1;
+	return ret;
 
 
 }
 
 int rot_ipu(void * raw_image, int raw_len )
 {
-	int ret;
+	int ret , i;
 	static int autoChangeRotate = 0;
 	static int rotateMode = 0;
 	
-#ifdef show_frame_time
+#ifdef SHOW_FRAME_RATE
 	static struct timeval tv_start, tv_current;
 	int total_time;
 	if(autoChangeRotate % 100 == 0)
 		gettimeofday(&tv_start, NULL);
 #endif
-	
+
 	//Copy the raw image to the IPU buffer
 	memcpy(inbuf, raw_image, raw_len);
+
+//	Yuv420p2Rgb32(inbuf,fd_buf,640,480);
+//	return 0;
 	
 	ret = ioctl(fd_ipu, IPU_QUEUE_TASK, t);
 	if (ret < 0) {
 		return -1;
 	}
-	
-	#ifdef VIDEO_TO_QT
-	if( (fd_qt > 0) && (autoChangeRotate == 0) )
-		write(fd_qt,&t->output.paddr,sizeof(t->output.paddr));
-	
-	#endif
+	if( !bFullScreenVideo ) // used in none-full screen mode
+		for(i =0; i < t->output.height; i++)
+			memcpy( ((char *)fd_buf) + i*1024*4, ipuUserPaddr + i*t->output.width*4, t->output.width*4);
 	
 	if(autoChangeRotate ++ % 100 == 0){
 		rotateMode = (rotateMode + 5 ) % 8;
 		//printf("change rotate mode :%d\n", rotateMode);
 	}
 	
-#ifdef show_frame_time
+#ifdef SHOW_FRAME_RATE
 	if(autoChangeRotate % 100 == 99){
 		gettimeofday(&tv_current, 0);
 		total_time = (tv_current.tv_sec - tv_start.tv_sec) * 1000000L;

@@ -195,6 +195,9 @@ typedef struct {
 	int enable_onvif;
 	int enable_wdr;
 	int resolution;
+	int xres;   //camera capture width
+	int yres;   //camera capture height
+
 	
 //	[web_cfg]
 //	username=admin

@@ -214,8 +214,11 @@ void MyView::ReadAllSettings( )
 	cfg.port_keyleft  = settings.value( "alone_cfg/port_keyleft" ).toInt();
 	cfg.port_keyright = settings.value( "alone_cfg/port_keyright" ).toInt();
 
+	cfg.xres = settings.value( "video_cfg/xres" ).toInt();
+	cfg.yres = settings.value( "video_cfg/yres" ).toInt();
+
 	
-	qDebug() << getLocalIp()  << " cfg.localid" << cfg.localid <<"cfg.ip_keyleft"<<cfg.ip_keyleft;
+	qDebug() << getLocalIp()  << " localid" << cfg.localid <<"ip_keyleft"<<cfg.ip_keyleft <<cfg.xres <<cfg.yres;
 
 	if( getLocalIp() != cfg.local_ip )
 		system_cmd_exec("ifconfig eth0 %s", cfg.local_ip.toLatin1().data());

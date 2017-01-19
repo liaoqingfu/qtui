@@ -4,7 +4,6 @@
 #include "myview.h" 
 
 
-#define FIFO_QT_VIDEO  "/tmp/qt_video"
 
 char call_num_seq[13] = {'1','2','3','4','5','6','7','8','9','*','0','#','.'};
 
