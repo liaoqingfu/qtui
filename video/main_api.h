@@ -14,11 +14,11 @@ Retval;
     extern "C" {
 #endif
 
-	void setRunstate(int bRun);
+	//void setRunstate(int bRun);
 
-    int startVideoTest();
+    //int startVideoTest();
 
-	int main_sequence_execute();
+	//int main_sequence_execute();
 	
 	int video_capture_init(int frame_width,int frame_height,int ow, int oh, int fps);
 	void video_capture_destroy(void);

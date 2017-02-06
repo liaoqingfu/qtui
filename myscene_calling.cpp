@@ -4,7 +4,7 @@
 #include "myview.h" 
 #include "sipua/include/eXosip2/eXosip.h" 
 
-#define CALL_TIMEOUT   15000    //15 second
+#define CALL_TIMEOUT   10000    // second
 
 #define VIDEO_RTP_FRAME_LEN_MAX		(1024*40)
 #define VIDEO_ENABLE  1
@@ -70,6 +70,7 @@ void * capture_thread(void * pParam)
 
 void  dec_callback(void * pParam)
 {
+	static int dec_callback_count = 0;
 	if (pParam != NULL )
 	{
 		int 	nPayloadSize = 0;
@@ -78,6 +79,11 @@ void  dec_callback(void * pParam)
 		nPayloadSize = pMysceneCalling->sip_ua_1->m_video_stream.read_rtp_recvdata(pH264RecvBuf, VIDEO_RTP_FRAME_LEN_MAX);
 		while( nPayloadSize > 0 )
 		{
+			/*if( dec_callback_count++ % 200 == 0)
+				printf_log(LOG_IS_INFO, " dec_cb,:%d\n",dec_callback_count);
+			else	if( dec_callback_count < 8)*/
+			if( dec_callback_count < 100)
+				printf ("dc:%d\n",dec_callback_count++);
 			h264_dec_run(pMysceneCalling->h264_dec_ctx , (char *)pH264RecvBuf, nPayloadSize);
 			nPayloadSize = pMysceneCalling->sip_ua_1->m_video_stream.read_rtp_recvdata(pH264RecvBuf, VIDEO_RTP_FRAME_LEN_MAX);
 		}
@@ -98,10 +104,13 @@ void sipEvent_callback(eXosip_event_t *p_event, void *pParam)
 		case EXOSIP_CALL_RINGING:
 			printf_log(LOG_IS_INFO, "EXOSIP_CALL_RINGING\n");
 			break;
+		case EXOSIP_CALL_REQUESTFAILURE:
+			pMysceneCalling->stopCall();
+			break;
 		case EXOSIP_CALL_ANSWERED:
 		case EXOSIP_CALL_ACK:
 			printf_log(LOG_IS_INFO, "EXOSIP ANSWERED ACK\n");
-			pMysceneCalling->inCall(  );
+			pMysceneCalling->inCall(  );//use change sip talk type to cancel timer event
 			break;
 		case EXOSIP_CALL_INVITE:
 			if( pMysceneCalling->answerCall() > 0){
@@ -135,33 +144,25 @@ void  myscene_calling::widget_init()
 
 	label_back = new QLabel();
 	label_back->setAttribute(Qt::WA_TranslucentBackground); 
-    label_back->setPixmap(QPixmap(":/main.bmp"));
-	label_back->setGeometry(0,0,1024,600);
+    label_back->setPixmap(QPixmap(":/pic/main.bmp"));//:/pic/input_dp_1.bmp
+	label_back->setGeometry(0,0,SCREEN_WID,SCREEN_HEIGHT);
 	this->addWidget(label_back);
 
 	label_backCircle = new QLabel();
 	label_backCircle->setAttribute(Qt::WA_TranslucentBackground); 
-    label_backCircle->setPixmap(QPixmap(":/calling.bmp"));
+    label_backCircle->setPixmap(QPixmap(":/pic/calling.bmp"));
 	label_backCircle->move(200,100);
 	this->addWidget(label_backCircle);
 
 	QPalette pe;
 	pe.setColor(QPalette::WindowText,Qt::white);
 
-	/*label_time = new QLabel("time:");
-    
-    label_time->setPalette(pe);
-    label_time->setAttribute(Qt::WA_TranslucentBackground); 
-    label_time->setFont( QFont(FONE_NAME, 40) );
-    label_time->setGeometry(230,370,150,150);
-    proxy = this->addWidget(label_time);
-    proxy->setRotation(-90);*/
 	
 	label_calling = new QLabel("Calling... ...");
 	//pe.setColor(QPalette::WindowText,Qt::white);
 	label_calling->setPalette(pe);
 	label_calling->setAttribute(Qt::WA_TranslucentBackground); 
-	label_calling->setFont( QFont(FONE_NAME, 25) );
+	label_calling->setFont( QFont(FONE_NAME, TIME_DATE_FONTSIZE*1.5) );
 	label_calling->setGeometry(290,370,250,250);
 	proxy = this->addWidget(label_calling);
 	proxy->setRotation(-90);
@@ -170,11 +171,11 @@ void  myscene_calling::widget_init()
 	QPixmap pixmap;
 
     bt_stopCall = new QPushButton;
-   // pixmap.load( ":/leftCall.bmp" );
+   // pixmap.load( ":/pic/leftCall.bmp" );
   //  bt_stopCall->setGeometry( 900, 300,pixmap.width() ,pixmap.height());
   //  bt_stopCall->setIcon( pixmap );
    //bt_stopCall->setIconSize( QSize( pixmap.width() -15,pixmap.height() -15));
-  	bt_stopCall->setFont( QFont(FONE_NAME, 25) );
+  	bt_stopCall->setFont( QFont(FONE_NAME, TIME_DATE_FONTSIZE*1.5) );
     bt_stopCall->move(920,300);
    	bt_stopCall->setText("STOP"); 
 	proxy = this->addWidget(bt_stopCall);
@@ -182,13 +183,15 @@ void  myscene_calling::widget_init()
 
 	connect( bt_stopCall ,SIGNAL(clicked( )), this, SLOT(bt_stopCallClicked( )));
 
+	sip_init_once( cfg.sip_ip.toLatin1().data() );
+
 	sip_ua_1 = NULL;
 	bExitCaptureThread = 0;
 
 }
 
 
-int myscene_calling::sip_init_once( char * sipServerIp, char * localId)
+int myscene_calling::sip_init_once( char * sipServerIp)
 {
 	struct timeval		ts;
 	CSocketEx			socket_spon;
@@ -198,7 +201,7 @@ int myscene_calling::sip_init_once( char * sipServerIp, char * localId)
 	if( (sip_ua_1 != NULL) )
 		return -1;
 
-	printf("serverip:%s, localId:%s\n",sipServerIp, localId);
+	printf("serverip:%s, \n",sipServerIp);
 	cap_pic_width = cfg.xres; 
 	cap_pic_height = cfg.yres;
 	crop_pic_width = cfg.xres;   //cfg.screen_xres +8; 
@@ -206,10 +209,16 @@ int myscene_calling::sip_init_once( char * sipServerIp, char * localId)
 	
 	sip_ua_1 = new CSipUA;
 	
-	sip_ua_1->set_local_addr(socket_spon.get_first_hostaddr(), SIP_LOCAL_PORT + atoi(localId));
+/*	sip_ua_1->set_local_addr(socket_spon.get_first_hostaddr(), SIP_LOCAL_PORT + atoi(localId));
 	sip_ua_1->set_register_addr(sipServerIp, SIP_SERVER_PORT);
-	sip_ua_1->set_username_password(localId, SIP_SERVER_PASSWORD);
+	sip_ua_1->set_username_password(localId, SIP_SERVER_PASSWORD);*/
+
+	sip_ua_1->set_local_addr(socket_spon.get_first_hostaddr(), cfg.sip_port );//SIP_LOCAL_PORT
+	sip_ua_1->set_register_addr(sipServerIp, cfg.sip_server_port);//SIP_SERVER_PORT
+	sip_ua_1->set_username_password(cfg.sip_username.toLatin1().data(), cfg.sip_passwd.toLatin1().data());//SIP_SERVER_PASSWORD
+	
 	sip_ua_1->m_audio_stream.set_enable_sound_card(TRUE);
+	sip_ua_1->set_enable_rtp_video(TRUE);
 	sip_ua_1->init();
 	sip_ua_1->m_audio_stream.set_audio_src(AUDIO_SRC_SOUNDCARD);
 
@@ -221,8 +230,6 @@ int myscene_calling::sip_init_once( char * sipServerIp, char * localId)
     ua_get_time(&ts);
 
 	// 添加文件列表
-	sprintf(p_file, "%s%s", str_file.c_str(), "1.mp3");
-	//sip_ua_1.m_audio_stream.m_audio_file.add_file(p_file);
 	sprintf(p_file, "%s%s", str_file.c_str(), "1.wav");
 	sip_ua_1->m_audio_stream.m_audio_file.add_file(p_file);
 	sip_ua_1->m_audio_stream.set_audio_src(AUDIO_SRC_SOUNDCARD);
@@ -258,7 +265,7 @@ void myscene_calling::startCapture(  )
 			if (video_capture_init( cap_pic_width, cap_pic_height, crop_pic_width, crop_pic_height,  25) >= 0 ) {
 				if (pthread_create(&pid_capture, NULL, capture_thread, this) >= 0)
 				{
-					sip_ua_1->set_enable_rtp_video(TRUE);
+					//sip_ua_1->set_enable_rtp_video(TRUE);
 					sip_ua_1->set_video_recvdata_callback( dec_callback , this);
 				}
 				else
@@ -281,7 +288,7 @@ int myscene_calling::startCall( char * dstId)
 		return SipTalkType;
 	}
 	if( (sip_ua_1 == NULL) ){
-		//if( sip_init_once ( sipServerIp, localId ) < 0) 
+		//if( sip_init_once ( sipServerIp ) < 0) 
 		return -1;
 	}
 	SipTalkType = CALL_AUDIO_OUT;
@@ -296,6 +303,11 @@ int myscene_calling::startCall( char * dstId)
 		printf_log(LOG_IS_INFO,"StartCall timeout begin\n");
 		
 	}
+	else {
+		SipTalkType = CALL_IDLE;
+		label_calling->setText("");
+	}
+		
 
 	/*
 		switch(command) 
@@ -416,9 +428,9 @@ void myscene_calling::timerEvent( QTimerEvent *event )
 {
 	if( event->timerId() == m_nTimeoutId)
 	{
+		killTimer( m_nTimeoutId ); 
 		if( (SipTalkType != CALL_AUDIO_TALK) && ( SipTalkType != CALL_VIDEO_TALK)) {
 			printf_log(LOG_IS_INFO, "Call Timeout, auto stopCall\n");
-			killTimer( m_nTimeoutId ); 
 			#ifndef LOCAL_VIDEO_DISPLAY
 			stopCall();
 			#endif

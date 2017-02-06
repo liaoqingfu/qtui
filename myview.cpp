@@ -1,8 +1,21 @@
 #include "myview.h"  
 #include <QKeyEvent>  
 
+#include "api/misc.h"
+
 
 ncs_cfg_t cfg;
+
+
+void MyView::gpio_init(  )
+{
+	gpio_open(LEFT_KEY,  GPIO_IN); 
+	gpio_open(RIGHT_KEY, GPIO_IN); 
+	
+	gpio_open(LEFT_LED , GPIO_OUT); 
+	gpio_open(RIGHT_LED , GPIO_OUT);  
+
+}
 
 MyView::~MyView( )
 {
@@ -24,40 +37,89 @@ MyView::MyView(QWidget *parent) :
 
     setBackgroundBrush(tilePixmap);*/
 
+	ReadAllSettings( );
 
     WindowType = WINDOW_TYPE_MAIN;
 
     scene_video = new myscene_video( this );
-	scene_video->setSceneRect(0,0,1024,600);
+	scene_video->setSceneRect(0,0,SCREEN_WID,SCREEN_HEIGHT);
 	
 	scene_calling = new myscene_calling( this );
-	scene_calling->setSceneRect(0,0,1024,600);
+	scene_calling->setSceneRect(0,0,SCREEN_WID,SCREEN_HEIGHT);
 
 	scene_list = new myscene_list( this );
-	scene_list->setSceneRect(0,0,1024,600);
+	scene_list->setSceneRect(0,0,SCREEN_WID,SCREEN_HEIGHT);
 
 	scene_pic = new myscene_pic( this );
-	scene_pic->setSceneRect(0,0,1024,600);
+	scene_pic->setSceneRect(0,0,SCREEN_WID,SCREEN_HEIGHT);
 
     scene_num_call = new myscene_num_call( this );
-	scene_num_call->setSceneRect(0,0,1024,600);
+	scene_num_call->setSceneRect(0,0,SCREEN_WID,SCREEN_HEIGHT);
 	
     scene_main = new myscene_main( this );
-	scene_main->setSceneRect(0,0,1024,600);//(0,0,(static_cast<QWidget *>600),(static_cast<QWidget *>600) );
+	scene_main->setSceneRect(0,0,SCREEN_WID,SCREEN_HEIGHT);//(0,0,(static_cast<QWidget *>600),(static_cast<QWidget *>600) );
 	
 	this->setScene(scene_main);
-
+	gpio_init(  );
 	
-	ReadAllSettings( );
+	m_nTimerId = startTimer(1000);  
 	
 }  
+
+void MyView::timerEvent( QTimerEvent *event )
+
+{
+	QTime qtimeObj = QTime::currentTime();
+	static int minute = -1;
+	
+#if  HARD_KEY_TRIG
+	if( gpio_get( LEFT_KEY ) == 0)
+		scene_main->bt_leftCallClicked();
+
+	if( gpio_get( RIGHT_KEY ) == 0)
+		scene_main->bt_rightCallClicked();
+#endif
+	
+	//if( minute != qtimeObj.minute() )
+	{
+		minute = qtimeObj.minute();
+		QString str;
+		str.sprintf("%02d:%02d",qtimeObj.hour(),qtimeObj.minute() );  //, qtimeObj.second()
+		switch ( WindowType )
+		{
+			case WINDOW_TYPE_MAIN:	
+				scene_main->label_time->setText(str);
+				scene_main->label_date->setText(QDate::currentDate().toString(tr("yyyy-MM-dd dddd")));  
+				break;
+			case WINDOW_TYPE_NUM_CALL:	
+				scene_num_call->label_time->setText(str);
+				scene_num_call->label_date->setText(QDate::currentDate().toString(tr("dddd")));  
+				break;
+			case WINDOW_TYPE_LIST_CALL:  
+				scene_list->label_time->setText(str);
+				scene_list->label_date->setText(QDate::currentDate().toString(tr("dddd")));  
+				break;
+			case WINDOW_TYPE_PIC_CALL:
+				scene_pic->label_time->setText(str);
+				scene_pic->label_date->setText(QDate::currentDate().toString(tr("dddd")));  
+				break;
+				/*if( net_status )
+	        label_net_status->setPixmap(QPixmap(":/pic/online.bmp"));
+	   else
+	       label_net_status->setPixmap(QPixmap(":/pic/offline.bmp"));*/
+
+		}
+	}
+	
+		
+} 
 
 
 void MyView::changeWindowType( int winType )
 {
 
 	if( WindowType != winType ) {
-		qDebug() << "<scene:>" << winType;
+		
 		switch ( winType )
 		{
 			case WINDOW_TYPE_MAIN:	
@@ -65,8 +127,7 @@ void MyView::changeWindowType( int winType )
 				break;
 				
 			case WINDOW_TYPE_CALLING:	
-				topWindowType = WINDOW_TYPE_MAIN;
-				
+				topWindowType = WindowType;
 				this->setScene(scene_calling);
 				break;
 			case WINDOW_TYPE_NUM_CALL:	
@@ -98,7 +159,7 @@ void MyView::changeWindowType( int winType )
 		}
 	}
 	WindowType = winType;
-	
+	qDebug() << "<topW:>" << topWindowType << "<desW:>" <<winType;
 }
 /*
 
@@ -157,28 +218,9 @@ void MyView::WriteSettings(QString sector, QString sItem,int value)
 /*
 	settings.beginGroup("video_cfg");
 	settings.setValue( "output_w", 1024); //,output_h;int crop_x,crop_y,crop_w,crop_h;	int rotate;
-	settings.setValue( "output_h", 600);
-	settings.setValue( "crop_x", 0);
-	settings.setValue( "crop_y", 0);
-	settings.setValue( "crop_w", 0);
-	settings.setValue( "crop_h", 0);
-	settings.setValue( "rotate", 4);
 	settings.endGroup();
 	*/
 }
-/*
-QSettings settings;
- int size = settings.beginReadArray("logins");
- for (int i = 0; i < size; ++i) {
-     settings.setArrayIndex(i);
-     Login login;
-     login.userName = settings.value("userName").toString();
-     login.password = settings.value("password").toString();
-     logins.append(login);
- }
- settings.endArray();
-
-*/
 
 
 QString MyView::getLocalIp()
@@ -198,34 +240,111 @@ QList<QHostAddress> list = QNetworkInterface::allAddresses();
     }  
 
 }
+void ncs_cfg_netword_set(char* ip ,char* netmask,char* gw,char* dns1,char* dns2,char* mac_addr)
+{
+	
+    system_cmd_exec("rm -f /etc/resolv.conf");
+    if (dns1) system_cmd_exec("echo nameserver %s > /etc/resolv.conf", dns1);
+    if (dns2) system_cmd_exec("echo nameserver %s > /etc/resolv.conf", dns2);
+    if (mac_addr) system_cmd_exec("ifconfig eth0 hw ether %s", mac_addr);
+    if (ip && netmask) system_cmd_exec("ifconfig eth0 %s netmask %s up", ip, netmask);
+	if (gw) system_cmd_exec("route add default gw %s", gw);
+}
+
+void ncs_mac_addr_get(char* ip,char* mac_addr)
+{
+    unsigned int ip_addr = ntohl(inet_addr(ip));
+    sprintf(mac_addr, "%02x:%02x:%02x:%02x:%02x:%02x", 00, 0x89, (ip_addr >> 24 & 0xff),
+        (ip_addr >> 16 & 0xff), (ip_addr >> 8 & 0xff), (ip_addr & 0xff));
+}
 
 void MyView::ReadAllSettings( )
 {
+	int i = 0;
+	QString listReadStr;
     QSettings settings(CFG_NAME, QSettings::IniFormat);
 	cfg.local_ip = settings.value( "terminal/ip" ).toString();
 	cfg.localid = settings.value( "terminal/id" ).toString();
+	cfg.netmask = settings.value( "terminal/mask" ).toString();
+	cfg.gateway = settings.value( "terminal/gate" ).toString();
+	cfg.dns1 = settings.value( "terminal/dns1" ).toString();
+	cfg.dns2 = settings.value( "terminal/dns2" ).toString();
+	cfg.mac_addr = settings.value( "terminal/mac_addr" ).toString();
+
+	ncs_cfg_netword_set(cfg.local_ip.toLatin1().data() ,cfg.netmask.toLatin1().data(),
+		cfg.gateway.toLatin1().data() ,cfg.dns1.toLatin1().data(),
+		cfg.dns2.toLatin1().data() ,cfg.mac_addr.toLatin1().data());
 
 	cfg.sip_ip = settings.value( "sip/ip" ).toString();
 	cfg.sip_username= settings.value( "sip/sip_username" ).toString();
 	cfg.sip_passwd= settings.value( "sip/sip_passwd" ).toString();
+	
+	cfg.sip_port = settings.value( "sip/port" ).toInt();
+	cfg.sip_server_port = settings.value( "sip/sip_port" ).toInt();
+	cfg.sip_audio_rtp_port = settings.value( "sip/sip_audio_rtp_port" ).toInt();
+	cfg.sip_video_rtp_port = settings.value( "sip/sip_video_rtp_port" ).toInt();
 
+	cfg.alone_enable  = settings.value( "alone_cfg/enable" ).toInt();
 	cfg.ip_keyleft  = settings.value( "alone_cfg/ip_keyleft" ).toString();
 	cfg.ip_keyright = settings.value( "alone_cfg/ip_keyright" ).toString();
 	cfg.port_keyleft  = settings.value( "alone_cfg/port_keyleft" ).toInt();
 	cfg.port_keyright = settings.value( "alone_cfg/port_keyright" ).toInt();
 
-	cfg.xres = settings.value( "video_cfg/xres" ).toInt();
-	cfg.yres = settings.value( "video_cfg/yres" ).toInt();
+	cfg.volume_in= settings.value( "talk_cfg/volume_in" ).toInt();
+	cfg.volume_out= settings.value( "talk_cfg/volume_out" ).toInt();
+	cfg.volume_ring= settings.value( "talk_cfg/volume_ring" ).toInt();
+	cfg.mode_in= settings.value( "talk_cfg/mode_in" ).toInt();
+	cfg.mode_out= settings.value( "talk_cfg/mode_out" ).toInt();
+	cfg.talk_auto_answer= settings.value( "talk_cfg/talk_auto_answer" ).toInt();
+	cfg.accessing_talk_hangup= settings.value( "talk_cfg/accessing_talk_hangup" ).toInt();
+	cfg.echo= settings.value( "talk_cfg/echo" ).toInt();
+	cfg.environment= settings.value( "talk_cfg/environment" ).toInt();
+	cfg.display_target= settings.value( "talk_cfg/display_target" ).toInt();
 
-	
-	qDebug() << getLocalIp()  << " localid" << cfg.localid <<"ip_keyleft"<<cfg.ip_keyleft <<cfg.xres <<cfg.yres;
+	cfg.broadcast_mode_out= settings.value( "broadcast_cfg/mode_out" ).toInt();
+	cfg.broadcast_volume_out= settings.value( "broadcast_cfg/volume_out" ).toInt();
 
-	if( getLocalIp() != cfg.local_ip )
-		system_cmd_exec("ifconfig eth0 %s", cfg.local_ip.toLatin1().data());
+	cfg.monite_volume_in= settings.value( "monite_cfg/environment" ).toInt();
+	cfg.monite_mode_in= settings.value( "monite_cfg/mode_in" ).toInt();
 
 
-	scene_calling->sip_init_once( cfg.sip_ip.toLatin1().data() ,cfg.localid.toLatin1().data() );
-	
+	cfg.short_i1_alarm_mode= settings.value( "short_cfg/short_i1_alarm_mode" ).toInt();
+	cfg.short_o1_normal_mode= settings.value( "short_cfg/short_o1_normal_mode" ).toInt();
+	cfg.enable_removealarm= settings.value( "short_cfg/enable_removealarm" ).toInt();
+	cfg.enable_noisealarm= settings.value( "short_cfg/enable_noisealarm" ).toInt();
+	cfg.noise_alarm_vol= settings.value( "short_cfg/noise_alarm_vol" ).toInt();
+	cfg.noise_alarm_time= settings.value( "short_cfg/noise_alarm_time" ).toInt();
+
+	cfg.screensaver_min= settings.value( "other_cfg/screensaver_min" ).toInt();
+	cfg.io_out_pass= settings.value( "other_cfg/io_out_pass" ).toInt();
+
+	cfg.display_col= settings.value( "list_cfg/display_col" ).toInt();
+	for(i = 0; i < LIST_MAX_NUM; i++){
+		listReadStr.sprintf("list_cfg/name%i",i + 1);
+		cfg.list_name[i]= settings.value( listReadStr ).toString();
+		if( cfg.list_name[i].length() < 0){
+			break;
+		}
+		
+		listReadStr.sprintf("list_cfg/target%i",i + 1);
+		cfg.list_target[i]= settings.value( listReadStr ).toInt();
+		
+		listReadStr.sprintf("list_cfg/in_num%i",i + 1);
+		cfg.list_in_num[i]= settings.value( listReadStr ).toInt();
+		
+		listReadStr.sprintf("list_cfg/link%i",i + 1);
+		cfg.list_link[i]= settings.value( listReadStr ).toInt();
+	}
+	cfg.list_count = i;
+	qDebug() << " list cfg read count: " << i;
+
+	cfg.enable_onvif= settings.value( "video_cfg/enable_onvif" ).toInt();
+	cfg.enable_wdr= settings.value( "video_cfg/enable_wdr" ).toInt();
+	cfg.resolution = settings.value( "video_cfg/resolution" ).toInt();
+	video_image_resolution_get(cfg.resolution, &cfg.xres, &cfg.yres);
+
+	cfg.language= settings.value( "language/language" ).toInt();
+
 	//QString str= "date -s " + year + month + day + hour + minute + "." + second;
     //system_cmd_exec(str.toLatin1().data());
     //强制写入到CMOS

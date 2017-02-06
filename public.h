@@ -67,7 +67,7 @@
 #define REF_TIME_MS  1000
 #define REF_VIDEO_MS (1000/FRAME_FPS)
 
-#define NUM_CALL 15   //num of call num button
+#define NUM_CALL 18   //num of call num button
 #define MAX_NUM_LEN 10   //lengh of call num
 #define MAX_CALL_TYPE  2
 
@@ -79,10 +79,15 @@
     #define CFG_NAME "/var/www/ini/sys_cfg.txt"
 #endif
 
-#define NUM_X_WID       160
-#define NUM_START_X     200   //1开始位置
 
-#define NUM_Y_HEIGHT    200
+#define SCREEN_WID   		1024
+#define SCREEN_HEIGHT   	600
+
+#define NUM_START_X     200   //1开始位置
+#define NUM_X_WID       ((SCREEN_WID - NUM_START_X)/6)
+
+#define NUM_START_Y     SCREEN_HEIGHT   //(SCREEN_HEIGHT - (SCREEN_HEIGHT - 3*NUM_Y_HEIGHT)/2)
+#define NUM_Y_HEIGHT    (SCREEN_HEIGHT / 3)
 
 
 #define WINDOW_TYPE_MAIN     	  0
@@ -109,6 +114,21 @@
 #define GPIO_OUT   1
 
 
+
+#define TIME_DATE_FONTSIZE   20
+#define TIME_POSX   2
+#define TIME_POSY   550
+#define TIME_POSW   150
+#define TIME_POSH   50
+
+#define DATE_POSX   2
+#define DATE_POSY   400
+#define DATE_POSW   200
+#define DATE_POSH   50
+
+
+#define LIST_MAX_NUM  64
+
 typedef struct {
 //[terminal]
 	QString localid;
@@ -132,7 +152,7 @@ typedef struct {
 	int sip_server_port;
 
 //[alone_cfg]
-	int   enable;
+	int   alone_enable;
 	QString ip_keyleft;
 	int port_keyleft;
 	QString ip_keyright;
@@ -158,7 +178,7 @@ typedef struct {
 	
 //	[monite_cfg]
 	int monite_volume_in;
-	int monitemode_in;
+	int monite_mode_in;
 	
 //	[short_cfg]
 	int short_i1_alarm_mode;
@@ -174,29 +194,19 @@ typedef struct {
 	
 //	[list_cfg]
 	int display_col;
-	QString name1;
-	int target1;
-	int in_num1;
-	int link1;
+	int list_count;
+	QString list_name[LIST_MAX_NUM];
+	int list_target  [LIST_MAX_NUM];
+	int list_in_num  [LIST_MAX_NUM];
+	int list_link    [LIST_MAX_NUM];
 	
-	QString name2;
-	int target2;
-	int in_num2;
-	int link2;
-
-	
-	QString name3;
-	int target3;
-	int in_num3;
-	int link3;
-
 	
 //	[video_cfg]
 	int enable_onvif;
 	int enable_wdr;
 	int resolution;
-	int xres;   //camera capture width
-	int yres;   //camera capture height
+	unsigned int xres;   //camera capture width
+	unsigned int yres;   //camera capture height
 
 	
 //	[web_cfg]

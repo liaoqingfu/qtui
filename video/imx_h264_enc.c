@@ -74,6 +74,12 @@ typedef struct _Context Context;
 #define FPS_N 25
 #define FPS_D 1
 
+//#define ENC_SAVE_FILE 
+
+#ifdef ENC_SAVE_FILE
+static  FILE * fd_enc_file = 0;
+#endif
+
 
 struct _Context
 {
@@ -340,6 +346,15 @@ int h264_enc_process(char* buf,int nsize,char** encoded_buf)
 	output_code =  ctx->output_frame.data_size;
 	
 	* encoded_buf = ctx->output_frame.acquired_handle;
+
+#ifdef ENC_SAVE_FILE
+	if ((fd_enc_file = fopen("h264_enc.yuv", "a+")) !=NULL)
+    {
+       	fwrite( ctx->output_frame.acquired_handle, output_code, 1, fd_enc_file);
+		fclose(fd_enc_file);
+		fd_enc_file = NULL;
+    }
+#endif	
 
 	return output_code;
 }

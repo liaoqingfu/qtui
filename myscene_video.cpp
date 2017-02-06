@@ -29,8 +29,8 @@ void myscene_video::startVideo()
 {
 	if( bShowVideo == false )
 	{
-		setRunstate( 1 );
-		startVideoTest();
+		//setRunstate( 1 );
+		//startVideoTest();
 		bt_stopCall->show();
 		bShowVideo = true;
 	}
@@ -43,7 +43,7 @@ void myscene_video::stopVideo()
 {
 	if( bShowVideo == true )
 	{
-		setRunstate( 0 );
+		//setRunstate( 0 );
 		bt_stopCall->hide();
 		bShowVideo = false;
 		pmv->changeWindowType(pmv->topWindowType) ;

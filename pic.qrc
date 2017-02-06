@@ -1,25 +1,21 @@
 <RCC>
     <qresource prefix="/">
-        <file>input_dp_1.bmp</file>
-        <file>input_dp_2.bmp</file>
-        <file>input_dp_3.bmp</file>
-        <file>input_dp_4.bmp</file>
-        <file>input_dp_5.bmp</file>
-        <file>input_dp_6.bmp</file>
-        <file>input_dp_7.bmp</file>
-        <file>input_dp_8.bmp</file>
-        <file>input_dp_9.bmp</file>
-        <file>input_dp_10.bmp</file>
-        <file>input_dp_11.bmp</file>
-        <file>input_dp_12.bmp</file>
-        <file>input_dp_13.bmp</file>
-        <file>input_dp_14.bmp</file>
-        <file>input_dp_15.bmp</file>
-        <file>offline.bmp</file>
-        <file>online.bmp</file>
-        <file>main.bmp</file>
-        <file>rightCall.bmp</file>
-        <file>leftCall.bmp</file>
-        <file>calling.bmp</file>
+        <file>pic/rightCall.bmp</file>
+        <file>pic/online.bmp</file>
+        <file>pic/offline.bmp</file>
+        <file>pic/main.bmp</file>
+        <file>pic/main-other.bmp</file>
+        <file>pic/leftCall.bmp</file>
+        <file>pic/pic0.bmp</file>
+        <file>pic/pic5.bmp</file>
+        <file>pic/pic4.bmp</file>
+        <file>pic/pic3.bmp</file>
+        <file>pic/pic2.bmp</file>
+        <file>pic/pic1.bmp</file>
+        <file>pic/list0.bmp</file>
+        <file>pic/list1.bmp</file>
+        <file>pic/list2.bmp</file>
+        <file>pic/calling.bmp</file>
+        <file>pic/broadcast1.bmp</file>
     </qresource>
 </RCC>

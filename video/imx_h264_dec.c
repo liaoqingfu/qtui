@@ -669,8 +669,7 @@ Retval h264_dec_run(h264_dec_Context *ctx, char * buf, int length)
 	ph264Buf = buf;
 	h264Len  = length;
 	#ifdef  SIMULATE_DECODE
-		h264_decode_frame(ctx);
-		return 0;
+		return h264_decode_frame(ctx);
 	#endif
 	
 	for (;;)

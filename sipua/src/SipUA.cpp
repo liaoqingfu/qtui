@@ -252,9 +252,9 @@ void CSipUA::set_username_password(const char *username, const char *password)
     strncpy(m_username, username, SIP_UA_USERNAME_LEN);
     m_username[SIP_UA_USERNAME_LEN - 1] = '\0';
 	port = SIP_RTP_AUDIO_PORT_DEFAULT + atoi(m_username);
-	if (port > SIP_RTP_PORT_MAX)
+	if (port >= SIP_RTP_VIDEO_PORT_DEFAULT)  //lhg change  SIP_RTP_PORT_MAX to SIP_RTP_VIDEO_PORT_DEFAULT
 	{
-		while (port > SIP_RTP_PORT_MAX)
+		while (port >= SIP_RTP_VIDEO_PORT_DEFAULT)  
 			port -= SIP_RTP_PORT_MIN;
 	}
 	m_rtp_audio_port = port;
@@ -750,7 +750,8 @@ void CSipUA::sip_event_registration_failure(eXosip_event_t *p_event)
 	osip_generic_param_t	*p_uri_param = NULL;
 
     m_registering = FALSE;
-	m_register_failure_count++;
+	if (p_event->response != NULL && 401 == p_event->response->status_code)
+		m_register_failure_count++;
 	if (m_register_failure_count >= 2)
 	{
 		m_registered = FALSE;

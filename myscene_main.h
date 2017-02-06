@@ -11,12 +11,12 @@ class myscene_main : public QGraphicsScene
 	Q_OBJECT  
 public:  
     explicit myscene_main(class MyView * pmv , QObject *parent = 0);
-  
+	QLabel *label_time;
+	QLabel *label_date;  
 protected:	
 	void mousePressEvent(QGraphicsSceneMouseEvent *event);
 
   
-  void gpio_init(  );
   
 signals:  
 
@@ -34,11 +34,10 @@ private:
     class MyView * pmv;
 
         void widget_init();
-		void timerEvent( QTimerEvent *event );
-
-		QLabel *label_time;
-		QLabel *label_date;
+//		void timerEvent( QTimerEvent *event );
 		int m_nTimerId;
+
+
 
         QPushButton *bt_leftCall;
 		QPushButton *bt_rightCall;

@@ -22,32 +22,35 @@ void  myscene_pic::widget_init()
 
 	label_back = new QLabel();
 	label_back->setAttribute(Qt::WA_TranslucentBackground); 
-	label_back->setGeometry(100,100,102,60);
-	label_back->setText("PIC CALL WINDOWS");
+    label_back->setPixmap(QPixmap(":/pic/main-other.bmp"));
+	label_back->setGeometry(0,0,SCREEN_WID,SCREEN_HEIGHT);
+	//label_back->setText("PIC CALL WINDOWS");
 	this->addWidget(label_back);
 
-	label_time = new QLabel("time:");
+
+	label_time = new QLabel("");
     QPalette pe;
     pe.setColor(QPalette::WindowText,Qt::white);
     label_time->setPalette(pe);
     label_time->setAttribute(Qt::WA_TranslucentBackground); 
-    label_time->setFont( QFont(FONE_NAME, 40) );
-    label_time->move(180,400);
+    label_time->setFont( QFont(FONE_NAME, TIME_DATE_FONTSIZE) );
+    label_time->setGeometry(TIME_POSX,TIME_POSY,TIME_POSW,TIME_POSH);
     proxy = this->addWidget(label_time);
     proxy->setRotation(-90);
 
 	
-	label_date = new QLabel("time:");
+	label_date = new QLabel("");
 	//pe.setColor(QPalette::WindowText,Qt::white);
 	label_date->setPalette(pe);
 	label_date->setAttribute(Qt::WA_TranslucentBackground); 
-	label_date->setFont( QFont(FONE_NAME, 25) );
-	label_date->move(250,470);
+	label_date->setFont( QFont(FONE_NAME, TIME_DATE_FONTSIZE) );
+	label_date->setGeometry(DATE_POSX,DATE_POSY,DATE_POSW,DATE_POSH);
 	proxy = this->addWidget(label_date);
 	proxy->setRotation(-90);
+
 	
 	QPixmap pixmap;
-	pixmap.load( ":/rightCall.bmp" );
+	pixmap.load( ":/pic/rightCall.bmp" );
 
 	bt_retCall = new QPushButton;
 	bt_retCall->setGeometry( 900, 100,pixmap.width() ,pixmap.height());
@@ -57,8 +60,6 @@ void  myscene_pic::widget_init()
 	
 	connect( bt_retCall ,SIGNAL(clicked( )), this, SLOT(bt_retCallClicked( )));
 
-	m_nTimerId = startTimer(1000);  
-    timerEvent( new QTimerEvent(m_nTimerId) ) ;
 
 
 }
@@ -78,26 +79,6 @@ myscene_pic::myscene_pic(MyView * pm,QObject *parent) :
 
 }  
 
-
-
-void myscene_pic::timerEvent( QTimerEvent *event )
-
-{
-	QTime qtimeObj = QTime::currentTime();
-	static int minute = -1;
-	if( pmv->WindowType != WINDOW_TYPE_PIC_CALL)
-		return;
-	
-	if( minute != qtimeObj.minute() ){
-		minute = qtimeObj.minute();
-		QString str;
-		str.sprintf("%02d:%02d",qtimeObj.hour(),qtimeObj.minute() );  //, qtimeObj.second()
-		label_time->setText(str);
-
-		label_date->setText(QDate::currentDate().toString(tr("yyyy-MM-dd dddd")));  
-	}
-
-} 
 /*
 char *name[]={"星期日","星期一","星期二","星期三","星期四","星期五","星期六"};   
 void main(void)   

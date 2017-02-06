@@ -11,7 +11,8 @@ class myscene_pic : public QGraphicsScene
 	Q_OBJECT  
 public:  
     explicit myscene_pic(class MyView * pmv , QObject *parent = 0);
-  
+	QLabel *label_time;
+	QLabel *label_date;  
 protected:	
 
   
@@ -22,7 +23,6 @@ signals:
 public slots:
 
 	void  bt_retCallClicked();
-//	void recv_slot();
 
 private:
 
@@ -30,11 +30,6 @@ private:
 	QPushButton *bt_retCall;
 
         void widget_init();
-		void timerEvent( QTimerEvent *event );
-
-		QLabel *label_time;
-		QLabel *label_date;
-		int m_nTimerId;
 
 		QLabel *label_back;
   

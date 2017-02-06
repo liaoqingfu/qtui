@@ -101,8 +101,8 @@ private:
 	static List<CVideoStream *> m_list_vs;						// 视频流清单
 	static ua_mutex_t		m_mutex_vs;							// m_list_vs视频流锁
 	static timer_data_t		m_tdata_video;						// 视频定时器
-	static BOOL				m_init_static_vs;					// 静态变量是否初始化
-	static BOOL				m_timer_rtp_data;					// 定时器里是否处理了rtp数据
+	static BOOL				m_init_static_vs ;					// 静态变量是否初始化
+	static BOOL				m_timer_rtp_data ;				// 定时器里是否处理了rtp数据
 
 	// video
 	BOOL					m_enable_video_card;

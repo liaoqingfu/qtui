@@ -32,11 +32,13 @@ char g_mime_type_h264[] = "H264";
 //------------- payload type end -----------------------
 
 // æ≤Ã¨±‰¡ø
+
 List<CVideoStream *> CVideoStream::m_list_vs;
 ua_mutex_t		CVideoStream::m_mutex_vs;
 timer_data_t	CVideoStream::m_tdata_video;
 BOOL			CVideoStream::m_init_static_vs = FALSE;
 BOOL			CVideoStream::m_timer_rtp_data = FALSE;
+
 
 CVideoStream::CVideoStream()
 	: m_h264_rtp_unpack(PAYLOAD_TYPE_H264), m_h264_rtp_pack(0x12345678)
@@ -48,7 +50,7 @@ CVideoStream::CVideoStream()
 
 	// portvideo
 	m_enable_video_card = FALSE;
-	m_resolution_ratio = 100;
+	m_resolution_ratio = 30;
 	m_video_input_len = 0;
 	m_use_video_card = FALSE;
 

@@ -12,15 +12,6 @@ extern "C"  int _Z6xc9000v( );
 extern "C"  void pt( );
 
 
-void myscene_main::gpio_init(  )
-{
-	gpio_open(LEFT_KEY,  GPIO_IN); 
-	gpio_open(RIGHT_KEY, GPIO_IN); 
-	
-	gpio_open(LEFT_LED , GPIO_OUT); 
-	gpio_open(RIGHT_LED , GPIO_OUT);  
-
-}
 
 void myscene_main::verifyTime()
 {
@@ -76,26 +67,26 @@ void  myscene_main::widget_init()
 
 	label_back = new QLabel();
 	label_back->setAttribute(Qt::WA_TranslucentBackground); 
-    label_back->setPixmap(QPixmap(":/main.bmp"));
-	label_back->setGeometry(0,0,1024,600);
+    label_back->setPixmap(QPixmap(":/pic/main.bmp"));
+	label_back->setGeometry(0,0,SCREEN_WID,SCREEN_HEIGHT);
 	this->addWidget(label_back);
 
-	label_time = new QLabel("time:");
+	label_time = new QLabel("");
     QPalette pe;
     pe.setColor(QPalette::WindowText,Qt::white);
     label_time->setPalette(pe);
     label_time->setAttribute(Qt::WA_TranslucentBackground); 
-    label_time->setFont( QFont(FONE_NAME, 40) );
+    label_time->setFont( QFont(FONE_NAME, TIME_DATE_FONTSIZE*2) );
     label_time->setGeometry(180,400,300,150);
     proxy = this->addWidget(label_time);
     proxy->setRotation(-90);
 
 	
-	label_date = new QLabel("time:");
+	label_date = new QLabel("");
 	//pe.setColor(QPalette::WindowText,Qt::white);
 	label_date->setPalette(pe);
 	label_date->setAttribute(Qt::WA_TranslucentBackground); 
-	label_date->setFont( QFont(FONE_NAME, 25) );
+	label_date->setFont( QFont(FONE_NAME, TIME_DATE_FONTSIZE*1.5) );
 	label_date->setGeometry(250,470,400,150);
 	proxy = this->addWidget(label_date);
 	proxy->setRotation(-90);
@@ -103,14 +94,14 @@ void  myscene_main::widget_init()
 	QPixmap pixmap;
 
     bt_leftCall = new QPushButton;
-    pixmap.load( ":/leftCall.bmp" );
+    pixmap.load( ":/pic/leftCall.bmp" );
     bt_leftCall->setGeometry( 900, 300,pixmap.width() ,pixmap.height());
     bt_leftCall->setIcon( pixmap );
     bt_leftCall->setIconSize( QSize( pixmap.width() -15,pixmap.height() -15));
     this->addWidget( bt_leftCall );
 
 	bt_rightCall = new QPushButton;
-    pixmap.load( ":/rightCall.bmp" );
+    pixmap.load( ":/pic/rightCall.bmp" );
     bt_rightCall->setGeometry( 900, 100,pixmap.width() ,pixmap.height());
     bt_rightCall->setIcon( pixmap );
     bt_rightCall->setIconSize( QSize( pixmap.width() -15,pixmap.height() -15));
@@ -119,10 +110,8 @@ void  myscene_main::widget_init()
 	connect( bt_leftCall ,SIGNAL(clicked( )), this, SLOT(bt_leftCallClicked( )));
 	connect( bt_rightCall ,SIGNAL(clicked( )), this, SLOT(bt_rightCallClicked( )));
 
-	m_nTimerId = startTimer(1000);  
+	//m_nTimerId = startTimer(1000);  
    // timerEvent( new QTimerEvent(m_nTimerId) ) ;
-
-	gpio_init(  );
 
 }
 
@@ -130,8 +119,8 @@ void  myscene_main::bt_leftCallClicked()
 {
 	pmv->changeWindowType( WINDOW_TYPE_CALLING );
 	gpio_set( LEFT_LED , 1);
-	if( pmv->scene_calling->startCall( cfg.ip_keyleft.toLatin1().data()) > 0)
-		qDebug() << "bt_leftCallClicked" << cfg.ip_keyleft	<< cfg.port_keyleft;
+	if( pmv->scene_calling->startCall(pmv->scene_calling->sip_ua_1->m_call_target[0] ) > 0)  //cfg.ip_keyleft.toLatin1().data()
+		printf( "bt_leftCallClicked:%s\n", pmv->scene_calling->sip_ua_1->m_call_target[0]); //cfg.ip_keyleft	<< cfg.port_keyleft;
 	else
 		pmv->changeWindowType( WINDOW_TYPE_MAIN);
 }
@@ -140,8 +129,8 @@ void  myscene_main::bt_rightCallClicked( )
 {
 	pmv->changeWindowType( WINDOW_TYPE_CALLING );
 	gpio_set( RIGHT_LED , 1);
-	if( pmv->scene_calling->startCall( cfg.ip_keyright.toLatin1().data()) > 0)
-		qDebug() << "bt_rightCallClicked" << cfg.ip_keyright << cfg.port_keyright;
+	if( pmv->scene_calling->startCall( pmv->scene_calling->sip_ua_1->m_call_target[1] ) > 0)  //cfg.ip_keyright.toLatin1().data()
+		printf( "bt_rightCallClicked:%s\n", pmv->scene_calling->sip_ua_1->m_call_target[1]); //cfg.ip_keyright << cfg.port_keyright;
 	else
 		pmv->changeWindowType( WINDOW_TYPE_MAIN);
 }
@@ -169,7 +158,7 @@ void myscene_main::changed(const QList<QRectF> &region)
 }  
 
 
-
+/*
 void myscene_main::timerEvent( QTimerEvent *event )
 
 {

@@ -148,7 +148,7 @@ CAudioStream::CAudioStream()
 	m_precvdata_callback = NULL;
 	m_precvdata_callback_param = NULL;
 
-	m_record = TRUE;
+	m_record = FALSE;
 	m_file_arx = NULL;
 	m_file_atx = NULL;
 
@@ -478,7 +478,7 @@ int CAudioStream::read_rtp_recvdata(short *p_recv, int samples)
 		ua_mutex_lock(&m_mutex_rtp_buf);
 		for (i = 0; i < samples; i++)
 		{
-			p_recv[i] = m_rtp_buf_arx[m_rtp_read_arx++];
+			p_recv[i] = m_rtp_buf_arx[m_rtp_read_arx++];//lhg can improve speed  :   memcpy
 			if (m_rtp_read_arx >= m_rtp_buf_max)
 				m_rtp_read_arx = 0;
 		}
@@ -555,7 +555,7 @@ void CAudioStream::process_rtp_data(void)
 					ua_mutex_lock(&m_mutex_rtp_buf);
 					for (i = 0; i < data_len; i++)
 					{
-						m_rtp_buf_arx[m_rtp_write_arx++] = p_sample_buf[i];
+						m_rtp_buf_arx[m_rtp_write_arx++] = p_sample_buf[i];//lhg can improve speed  :   memcpy
 						if (m_rtp_write_arx >= m_rtp_buf_max)
 							m_rtp_write_arx = 0;
 					}
@@ -586,7 +586,7 @@ void CAudioStream::process_rtp_data(void)
 				ua_mutex_lock(&m_mutex_rtp_buf);
 				for (i = 0; i < frame_len; i++)
 				{
-					p_sample_buf[i] = m_rtp_buf_atx[m_rtp_read_atx++];
+					p_sample_buf[i] = m_rtp_buf_atx[m_rtp_read_atx++];  //lhg can improve speed  :  memcpy
 					if (m_rtp_read_atx >= m_rtp_buf_max)
 						m_rtp_read_atx = 0;
 				}

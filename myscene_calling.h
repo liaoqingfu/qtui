@@ -38,7 +38,7 @@ public:
 	void 	* 	h264_dec_ctx;  //h264_dec_Context*
     CSipUA	*	sip_ua_1;
 	volatile int bExitCaptureThread = 0;
-	int  sip_init_once( char * sipServerIp, char * localId);
+	int  sip_init_once( char * sipServerIp );
 	QLabel *label_calling;
     class MyView * pmv;
   	int  SipTalkType;	//0 : no talk,	1: in talking,	 2:video talk

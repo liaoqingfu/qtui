@@ -11,24 +11,21 @@
 #define VIDEO_H264_DEC_ERR		4
 
 
-
 class myscene_num_call : public QGraphicsScene  
 {  
 	Q_OBJECT  
 public:  
     explicit myscene_num_call(class MyView * pmv,QObject *parent = 0);
 
-  
+	QLabel *label_time;
+	QLabel *label_date;
 protected:	
 //	void keyPressEvent(QKeyEvent *event);  
 //	void mousePressEvent(QGraphicsSceneMouseEvent *event);	
-    void timerEvent( QTimerEvent *event );
 
     //void CallTypeShow( int callTypeNum);
   
 signals:  
-
-
 
     public slots:
     void bt_numcallClicked( int buttonID);
@@ -42,16 +39,11 @@ signals:
 
 		QUdpSocket *udpSocket;
 
-
         qreal num;
         QString filename;
         QPixmap pixmap;
 
-
-
         QHBoxLayout *horizontalLayout_View;
-
-
 
         //call type 1
         QPushButton *bt_numcall[NUM_CALL];
@@ -63,12 +55,10 @@ signals:
         QLabel *label_net_status;
         int net_status;
 
-        QLabel *label_time;
         QLabel *label_bottom_status;
 
         QLabel *label_welcome;
-
-        int m_nTimerId;
+		QLabel *label_back;
 
 /*
 		int video_init_err;

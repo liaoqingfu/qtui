@@ -2808,23 +2808,23 @@ void imx_vpu_enc_set_default_open_params(ImxVpuCodecFormat codec_format, ImxVpuE
 	open_params->frame_height = 0;
 	open_params->frame_rate_numerator = 1;
 	open_params->frame_rate_denominator = 1;
-	open_params->bitrate = 100;
-	open_params->gop_size = 16;
+	open_params->bitrate = 500;
+	open_params->gop_size = 16;  //lhg   pframe number between two I frame
 	open_params->color_format = IMX_VPU_COLOR_FORMAT_YUV420;
 	open_params->user_defined_min_qp = -1;
 	open_params->user_defined_max_qp = -1;
 	open_params->min_intra_refresh_mb_count = 0;
-	open_params->intra_qp = -1;
+	open_params->intra_qp = -1;//lhg iFrame quantization
 	open_params->qp_estimation_smoothness = (int)(0.75*32768);
 	open_params->rate_control_mode = IMX_VPU_ENC_RATE_CONTROL_MODE_NORMAL;
 	open_params->macroblock_interval = 0;
-	open_params->slice_mode.multiple_slices_per_frame = 0;
+	open_params->slice_mode.multiple_slices_per_frame = 0;//lhg 
 	open_params->slice_mode.slice_size_unit = IMX_VPU_ENC_SLICE_SIZE_UNIT_BITS;
 	open_params->slice_mode.slice_size = 4000;
 	open_params->initial_delay = 0;
 	open_params->vbv_buffer_size = 0;
 	open_params->me_search_range = IMX_VPU_ENC_ME_SEARCH_RANGE_256x128;
-	open_params->use_me_zero_pmv = 0;
+	open_params->use_me_zero_pmv = 0;//lhg  ?
 	open_params->additional_intra_cost_weight = 0;
 	open_params->chroma_interleave = 0;
 
@@ -2851,7 +2851,7 @@ void imx_vpu_enc_set_default_open_params(ImxVpuCodecFormat codec_format, ImxVpuE
 			open_params->codec_params.h264_params.deblock_filter_offset_alpha = 6;
 			open_params->codec_params.h264_params.deblock_filter_offset_beta = 0;
 			open_params->codec_params.h264_params.chroma_qp_offset = 0;
-			open_params->codec_params.h264_params.enable_access_unit_delimiters = 0;
+			open_params->codec_params.h264_params.enable_access_unit_delimiters = 0;//lhg ?
 			break;
 
 		case IMX_VPU_CODEC_FORMAT_MJPEG:

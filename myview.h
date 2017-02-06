@@ -35,6 +35,11 @@ protected:
 	myscene_list * scene_list;
 	myscene_pic * scene_pic;
 
+
+	void timerEvent( QTimerEvent *event );
+	int m_nTimerId;
+	void gpio_init(  );
+
 	
 //    void keyPressEvent(QKeyEvent *event);  
 //    void mousePressEvent(QMouseEvent *event);  

@@ -27,7 +27,7 @@
 
 #define SIP_UA_PORT_DEFAULT         5060
 #define SIP_RTP_AUDIO_PORT_DEFAULT  10000
-#define SIP_RTP_VIDEO_PORT_DEFAULT  30000
+#define SIP_RTP_VIDEO_PORT_DEFAULT  30000       //lhg note: video port  shoulde > audio port
 #define SIP_RTP_PORT_MIN			10000
 #define SIP_RTP_PORT_MAX			55000		// rtcp = rtp + 10000
 #define SIP_UA_VER                  "1.0"

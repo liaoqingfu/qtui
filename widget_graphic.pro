@@ -41,7 +41,6 @@ SOURCES += main.cpp\
     video/vpu_io.c \
     video/vpu_gdi.c \
     video/vpu_debug.c \
-    video/main_api.c \
     myscene_video.cpp \
     myscene_num_call.cpp \
     myscene_main.cpp \
@@ -49,7 +48,22 @@ SOURCES += main.cpp\
     myscene_piccall.cpp \
     myscene_listcall.cpp \
   #  sipua/XC9000UATest1.cpp \
-    myscene_calling.cpp
+    myscene_calling.cpp \
+    sipua/src/AudioFile.cpp \
+    sipua/src/AudioStream.cpp \
+    sipua/src/EventList.cpp \
+    sipua/src/H264Pack.cpp \
+    sipua/src/log.cpp \
+    sipua/src/PlainParse.cpp \
+    sipua/src/SipSponServer.cpp \
+    sipua/src/SipUA.cpp \
+    sipua/src/socket.cpp \
+    sipua/src/Terminal.cpp \
+    sipua/src/ua_port.cpp \
+    sipua/src/VideoStream.cpp \
+    sipua/src/XC9000UATest1.cpp \
+    sipua/src/CodecAlawUlaw.c \
+    sipua/src/ua_global.c
 
 
 
@@ -82,7 +96,13 @@ HEADERS  += widget.h \
     api/common.h \
     myscene_piccall.h \
     myscene_listcall.h \
-    myscene_calling.h
+    myscene_calling.h \
+    sipua/src/CodecAlawUlaw.h \
+    sipua/src/defines.h \
+    sipua/src/SipSponServer.h \
+    sipua/src/SqQueue.h \
+    sipua/src/Terminal.h \
+    sipua/src/version.h
 
 
 
@@ -97,16 +117,12 @@ DEPENDPATH += $$PWD/sipua/lib
 
 
 
-win32:CONFIG(release, debug|release): LIBS += -L$$PWD/sipua/lib/release/ -lhello
-else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/sipua/lib/debug/ -lhello
-else:unix: LIBS += -L$$PWD/sipua/lib/ -lhello
-
 INCLUDEPATH += $$PWD/sipua/include
 DEPENDPATH += $$PWD/sipua/include
 
-win32:CONFIG(release, debug|release): LIBS += -L$$PWD/sipua/lib/release/ -lua
-else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/sipua/lib/debug/ -lua
-else:unix: LIBS += -L$$PWD/sipua/lib/ -lua
+#win32:CONFIG(release, debug|release): LIBS += -L$$PWD/sipua/lib/release/ -lua
+#else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/sipua/lib/debug/ -lua
+#else:unix: LIBS += -L$$PWD/sipua/lib/ -lua
 
 
 win32:CONFIG(release, debug|release): LIBS += -L$$PWD/sipua/lib/release/ -lresample

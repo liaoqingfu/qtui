@@ -14,9 +14,19 @@
 #include "imx_h264_enc.h"
 #include "imx_h264_utils.h"
 
+#include "ua_port.h"
+#include "socket.h"
+#include "ua_global.h"
+#include "SipUA.h"
+#include "SipSponServer.h"
+#include "log.h"
+#include "sipua/include/eXosip2/eXosip.h" 
+
+
 #define FIFO_H264_ENC  "/tmp/h264_enc_fifo"
 #define FIFO_H264_DEC  "/tmp/h264_dec_fifo"
 
+CSipUA	*	sip_ua_1;
 
 struct ENC_DEC_BUF{
         char * buf ;
@@ -196,9 +206,47 @@ int startVideoTest()
 
 }
 
+int sip_init_once( char * sipServerIp, char * localId)
+{
+	struct timeval		ts;
+	CSocketEx			socket_spon;
+	char				p_file[PATH_MAX];
+	string				str_file;
+
+	if( (sip_ua_1 != NULL) )
+		return -1;
+	
+	sip_ua_1 = new CSipUA;
+	
+	sip_ua_1->set_local_addr(socket_spon.get_first_hostaddr(), SIP_LOCAL_PORT + atoi(localId));
+	sip_ua_1->set_register_addr(sipServerIp, SIP_SERVER_PORT);
+	sip_ua_1->set_username_password(localId, SIP_SERVER_PASSWORD);
+	sip_ua_1->m_audio_stream.set_enable_sound_card(TRUE);
+	sip_ua_1->init();
+	sip_ua_1->m_audio_stream.set_audio_src(AUDIO_SRC_SOUNDCARD);
+
+	ua_usleep(500000);
+	get_exe_path(p_file, PATH_MAX);
+	str_file = p_file;
+	str_file = str_file.substr(0, str_file.find_last_of('\\') + 1);
+
+    ua_get_time(&ts);
+
+	// 添加文件列表
+	sprintf(p_file, "%s%s", str_file.c_str(), "1.mp3");
+	//sip_ua_1.m_audio_stream.m_audio_file.add_file(p_file);
+	sprintf(p_file, "%s%s", str_file.c_str(), "1.wav");
+	sip_ua_1->m_audio_stream.m_audio_file.add_file(p_file);
+	sip_ua_1->m_audio_stream.set_audio_src(AUDIO_SRC_SOUNDCARD);
+	
+	sip_ua_1->set_sip_event_callback( sipEvent_callback, this);
+
+	return 0;
+
+}
 
 //mutli-thread example
-int main_api()
+int main()
 {
 	char c;
 	printf("enter S (start test), P(stop test)\n");

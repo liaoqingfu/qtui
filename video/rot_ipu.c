@@ -410,6 +410,8 @@ int rot_ipu(void * raw_image, int raw_len )
 		printf("total time for %u frames = %u us =	%lld fps\n", 100, total_time, (100 * 1000000ULL) / total_time);
 	 	
 	}
+	if(autoChangeRotate < 100)
+		printf("r i:%d\n",autoChangeRotate);
 #endif
 
 
