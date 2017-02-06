@@ -23,9 +23,9 @@ void  myscene_list::widget_init()
 	LIST_COLUMN = cfg.display_col;
 	LIST_HEIGHT =( SCREEN_HEIGHT/ LIST_COLUMN );
 	curr_page_num = 1;
-	max_page_num = (cfg.list_count + LIST_COLUMN*LIST_ROW) / LIST_COLUMN*LIST_ROW;
+	max_page_num = (cfg.list_count + LIST_COLUMN*LIST_ROW) / (LIST_COLUMN*LIST_ROW);
 	
-	qDebug() << "myscene_list init max page" <<max_page_num; 
+	qDebug() << "myscene_list init page" <<max_page_num << "COLUMN" << LIST_COLUMN; 
 
     QGraphicsProxyWidget * proxy ;
 
@@ -47,6 +47,12 @@ void  myscene_list::widget_init()
     proxy = this->addWidget(label_time);
     proxy->setRotation(-90);
 
+	label_net_status = new QLabel();
+    label_net_status->setAttribute(Qt::WA_TranslucentBackground);
+    label_net_status->setPixmap(QPixmap(":/pic/offline.bmp"));
+    label_net_status->move(15,50);
+    proxy = this->addWidget(label_net_status);
+    proxy->setRotation(-90);
 	
 	label_date = new QLabel("");
 	//pe.setColor(QPalette::WindowText,Qt::white);
@@ -62,51 +68,39 @@ void  myscene_list::widget_init()
 	bg_listcall = new QButtonGroup;
     QString bg_pic;
 
-     for(int i = 0; i < LIST_COLUMN*LIST_ROW ; i++){
+     for(int i = 0; i < LIST_COLUMN*LIST_ROW + 6; i++){
+	 	int xpos ,ypos;
         bt_listcall[i] = new QPushButton;
+		if( i < LIST_COLUMN*LIST_ROW ){
+	        xpos =  LIST_START_X + ((int)(i/LIST_COLUMN))*LIST_WIDTH;
+	        ypos =  LIST_START_Y - (i%LIST_COLUMN) * LIST_HEIGHT;
 
-        int xpos =  LIST_START_X + ((int)(i/LIST_COLUMN))*LIST_WIDTH;
-        int ypos =  LIST_START_Y - (i%LIST_COLUMN) * LIST_HEIGHT;
-
-        bt_listcall[i]->setGeometry( xpos, ypos, LIST_HEIGHT,LIST_WIDTH);  //pixmap.width() ,pixmap.height());
+	        bt_listcall[i]->setGeometry( xpos, ypos, LIST_HEIGHT,LIST_WIDTH); 
+		}
+		else{
+			int j = i - LIST_COLUMN*LIST_ROW ;
+			xpos =  LIST_END_X + ((int)( j / 3))*LIST_WIDTH;
+			ypos =  LIST_START_Y - (j % 3) * NUM_Y_HEIGHT;
+			bt_listcall[i]->setGeometry( xpos, ypos, NUM_Y_HEIGHT,LIST_WIDTH);
+			if( j < 3 )
+				bg_pic.sprintf(":/pic/list%i.bmp",j );
+			else
+				bg_pic.sprintf(":/pic/pic%i.bmp",j );
+	        pixmap.load( bg_pic );
+			bt_listcall[i]->setIcon( pixmap );
+			bt_listcall[i]->setIconSize( QSize( NUM_Y_HEIGHT,LIST_WIDTH));
+		}
         bt_listcall[i]->setAttribute(Qt::WA_TranslucentBackground); 
 		
-		bt_listcall[i]->setStyleSheet("QPushButton{"
-                                "border:3px solid white;"  //宽度为3px的红色边框
-                                "border-radius:5px}"); //边框角的弧度为8px
+		bt_listcall[i]->setStyleSheet("QPushButton{"  "border:3px solid white; text-align: left;}"); 
+		
 		bt_listcall[i]->setFont( QFont(FONE_NAME, TIME_DATE_FONTSIZE*1.5) );
-		//bt_listcall[i]->setText(  cfg.list_name[i] );
 
         bg_listcall->addButton(bt_listcall[i],i);
         proxy = this->addWidget(bt_listcall[i]);
         proxy->setRotation(-90);
 
     }
-
-	for(int i = 0; i < 6; i++){
-		bt_listcall[i] = new QPushButton;
-
-		int xpos =  LIST_END_X + ((int)(i/3))*LIST_WIDTH;
-		int ypos =  LIST_START_Y - (i%3) * NUM_Y_HEIGHT;
-
-		bt_listcall[i]->setGeometry( xpos, ypos, NUM_Y_HEIGHT,LIST_WIDTH);  //pixmap.width() ,pixmap.height());
-        bt_listcall[i]->setAttribute(Qt::WA_TranslucentBackground); 
-		
-		bt_listcall[i]->setStyleSheet("QPushButton{"
-                                "border:3px solid white;");  //宽度为3px的红色边框
-
-		if( i < 3)
-			bg_pic.sprintf(":/pic/list%i.bmp",i );
-		else
-			bg_pic.sprintf(":/pic/pic%i.bmp",i );
-        pixmap.load( bg_pic );
-		bt_listcall[i]->setIcon( pixmap );
-		bt_listcall[i]->setIconSize( QSize( NUM_Y_HEIGHT,LIST_WIDTH));
-
-		bg_listcall->addButton(bt_listcall[i],i);
-        proxy = this->addWidget(bt_listcall[i]);
-        proxy->setRotation(-90);
-	}
 
 	set_list_content ( curr_page_num ) ;
 	connect( bg_listcall ,SIGNAL(buttonClicked(int)), this, SLOT(bt_listcallClicked(int)));
@@ -115,17 +109,20 @@ void  myscene_list::widget_init()
 
 void myscene_list::set_list_content( int pageNum )
 {
-
+	for(int i = 0; i < LIST_COLUMN*LIST_ROW ; i++){
+		bt_listcall[i]->setText(  cfg.list_name[ (pageNum - 1) * LIST_COLUMN*LIST_ROW + i] );
+	}
 
 }
 	
 
-void myscene_list::bt_numcallClicked( int buttonID)
+void myscene_list::bt_listcallClicked( int buttonID)
 {
     static int reachMaxLen = 0;
+	qDebug() << "buttonID" << buttonID ;
 
     if ( buttonID < LIST_COLUMN*LIST_ROW ) {
-        call_id_index  // = bt_listcall[buttonID]->text();
+        call_id_index  = (curr_page_num - 1) * LIST_COLUMN*LIST_ROW + buttonID ;
     }
 	else if ( buttonID == LIST_COLUMN*LIST_ROW) //pre page
 	{
@@ -133,8 +130,8 @@ void myscene_list::bt_numcallClicked( int buttonID)
     }
 	else if ( buttonID == LIST_COLUMN*LIST_ROW +1) //call
 	{
-		qDebug() << "call to" << str_numcall;
-       if( pmv->scene_calling->startCall( list_call_id.toLatin1().data() ) > 0) {
+		qDebug() << "call to" << cfg.list_target[call_id_index];
+       if( pmv->scene_calling->startCall( cfg.list_target[call_id_index].toLatin1().data() ) > 0) {
 			pmv->changeWindowType( WINDOW_TYPE_CALLING); 
 			qDebug() << "CHANGE TO CALLING WINDOW" ;
 	   	}

@@ -5,7 +5,7 @@
 
 
 ncs_cfg_t cfg;
-
+extern int 	sip_reg_success;
 
 void MyView::gpio_init(  )
 {
@@ -63,7 +63,7 @@ MyView::MyView(QWidget *parent) :
 	gpio_init(  );
 	
 	m_nTimerId = startTimer(1000);  
-	
+	timerEvent( new QTimerEvent(m_nTimerId) ) ;
 }  
 
 void MyView::timerEvent( QTimerEvent *event )
@@ -71,6 +71,7 @@ void MyView::timerEvent( QTimerEvent *event )
 {
 	QTime qtimeObj = QTime::currentTime();
 	static int minute = -1;
+	static int netStatusChanged = 1;
 	
 #if  HARD_KEY_TRIG
 	if( gpio_get( LEFT_KEY ) == 0)
@@ -79,39 +80,60 @@ void MyView::timerEvent( QTimerEvent *event )
 	if( gpio_get( RIGHT_KEY ) == 0)
 		scene_main->bt_rightCallClicked();
 #endif
+	QString str;
+	str.sprintf("%02d:%02d",qtimeObj.hour(),qtimeObj.minute() ); 
+
+	if(netStatusChanged != sip_reg_success)
+		netStatusChanged = 1;
 	
-	//if( minute != qtimeObj.minute() )
+	if( (minute != -1) )
 	{
-		minute = qtimeObj.minute();
-		QString str;
-		str.sprintf("%02d:%02d",qtimeObj.hour(),qtimeObj.minute() );  //, qtimeObj.second()
 		switch ( WindowType )
 		{
 			case WINDOW_TYPE_MAIN:	
 				scene_main->label_time->setText(str);
 				scene_main->label_date->setText(QDate::currentDate().toString(tr("yyyy-MM-dd dddd")));  
+			//	if( netStatusChanged )
+			//        scene_main->label_net_status->setPixmap( sip_reg_success ? QPixmap(":/pic/online.bmp") : QPixmap(":/pic/offline.bmp") );
 				break;
 			case WINDOW_TYPE_NUM_CALL:	
 				scene_num_call->label_time->setText(str);
 				scene_num_call->label_date->setText(QDate::currentDate().toString(tr("dddd")));  
+				if( netStatusChanged )
+					scene_num_call->label_net_status->setPixmap( sip_reg_success ? QPixmap(":/pic/online.bmp") : QPixmap(":/pic/offline.bmp") );
 				break;
 			case WINDOW_TYPE_LIST_CALL:  
 				scene_list->label_time->setText(str);
 				scene_list->label_date->setText(QDate::currentDate().toString(tr("dddd")));  
+				if( netStatusChanged )
+					scene_list->label_net_status->setPixmap( sip_reg_success ? QPixmap(":/pic/online.bmp") : QPixmap(":/pic/offline.bmp") );
 				break;
 			case WINDOW_TYPE_PIC_CALL:
 				scene_pic->label_time->setText(str);
 				scene_pic->label_date->setText(QDate::currentDate().toString(tr("dddd")));  
+				if( netStatusChanged )
+					scene_pic->label_net_status->setPixmap( sip_reg_success ? QPixmap(":/pic/online.bmp") : QPixmap(":/pic/offline.bmp") );
 				break;
-				/*if( net_status )
-	        label_net_status->setPixmap(QPixmap(":/pic/online.bmp"));
-	   else
-	       label_net_status->setPixmap(QPixmap(":/pic/offline.bmp"));*/
 
 		}
 	}
-	
-		
+	else{
+		scene_main->label_time->setText(str);
+		scene_main->label_date->setText(QDate::currentDate().toString(tr("yyyy-MM-dd dddd"))); 
+		scene_num_call->label_time->setText(str);
+		scene_num_call->label_date->setText(QDate::currentDate().toString(tr("dddd")));  
+		scene_list->label_time->setText(str);
+		scene_list->label_date->setText(QDate::currentDate().toString(tr("dddd"))); 
+		scene_pic->label_time->setText(str);
+		scene_pic->label_date->setText(QDate::currentDate().toString(tr("dddd"))); 
+	//	scene_main->label_net_status->setPixmap( sip_reg_success ? QPixmap(":/pic/online.bmp") : QPixmap(":/pic/offline.bmp") );
+		scene_num_call->label_net_status->setPixmap( sip_reg_success ? QPixmap(":/pic/online.bmp") : QPixmap(":/pic/offline.bmp") );
+		scene_list->label_net_status->setPixmap( sip_reg_success ? QPixmap(":/pic/online.bmp") : QPixmap(":/pic/offline.bmp") );
+		scene_pic->label_net_status->setPixmap( sip_reg_success ? QPixmap(":/pic/online.bmp") : QPixmap(":/pic/offline.bmp") );
+
+	}
+	minute = qtimeObj.minute();
+	netStatusChanged = 0;	
 } 
 
 
@@ -322,18 +344,21 @@ void MyView::ReadAllSettings( )
 	for(i = 0; i < LIST_MAX_NUM; i++){
 		listReadStr.sprintf("list_cfg/name%i",i + 1);
 		cfg.list_name[i]= settings.value( listReadStr ).toString();
-		if( cfg.list_name[i].length() < 0){
+		if( cfg.list_name[i].length() < 1){
 			break;
 		}
 		
 		listReadStr.sprintf("list_cfg/target%i",i + 1);
-		cfg.list_target[i]= settings.value( listReadStr ).toInt();
+		cfg.list_target[i]= settings.value( listReadStr ).toString();
 		
 		listReadStr.sprintf("list_cfg/in_num%i",i + 1);
 		cfg.list_in_num[i]= settings.value( listReadStr ).toInt();
 		
 		listReadStr.sprintf("list_cfg/link%i",i + 1);
 		cfg.list_link[i]= settings.value( listReadStr ).toInt();
+
+		
+		qDebug() <<  cfg.list_name[i] << cfg.list_target[i] << cfg.list_in_num[i] << cfg.list_link[i];
 	}
 	cfg.list_count = i;
 	qDebug() << " list cfg read count: " << i;

@@ -196,7 +196,7 @@ typedef struct {
 	int display_col;
 	int list_count;
 	QString list_name[LIST_MAX_NUM];
-	int list_target  [LIST_MAX_NUM];
+	QString list_target  [LIST_MAX_NUM];
 	int list_in_num  [LIST_MAX_NUM];
 	int list_link    [LIST_MAX_NUM];
 	

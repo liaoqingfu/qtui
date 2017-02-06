@@ -25,6 +25,8 @@ extern ncs_cfg_t cfg;
 extern "C"  int _Z6xc9000v( );
 
 static int bCaptureThread = 0;
+int 	sip_reg_success = 0;
+
 
 void * capture_thread(void * pParam)
 {
@@ -93,6 +95,7 @@ void  dec_callback(void * pParam)
 
 void sipEvent_callback(eXosip_event_t *p_event, void *pParam)
 {
+	static int failCount = 0;
 	myscene_calling * pMysceneCalling = ( myscene_calling * )pParam;
 	if (pParam != NULL && p_event != NULL)
 	{
@@ -100,6 +103,13 @@ void sipEvent_callback(eXosip_event_t *p_event, void *pParam)
 		{
 		case EXOSIP_REGISTRATION_SUCCESS:
 			printf_log(LOG_IS_INFO, "EXOSIP_REGISTRATION_SUCCESS\n");
+			sip_reg_success = 1;
+			failCount = 0;
+			break;
+		case EXOSIP_REGISTRATION_FAILURE:
+			if( failCount > 3)
+				sip_reg_success = 0;
+			++failCount ;
 			break;
 		case EXOSIP_CALL_RINGING:
 			printf_log(LOG_IS_INFO, "EXOSIP_CALL_RINGING\n");
@@ -293,6 +303,7 @@ int myscene_calling::startCall( char * dstId)
 	}
 	SipTalkType = CALL_AUDIO_OUT;
 	label_calling->setText("CALLING... ...");
+	printf_log(LOG_IS_INFO,"start Call to:%s\n", dstId);
 
 	startCapture(  );
 	

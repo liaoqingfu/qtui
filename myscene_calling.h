@@ -45,7 +45,6 @@ public:
 	int    	video_init_error;//0: init success
 	int 	m_nTimeoutId;
 
-
 	
 protected:	
 

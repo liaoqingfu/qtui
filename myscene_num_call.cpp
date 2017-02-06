@@ -71,10 +71,8 @@ void  myscene_num_call::widget_init()
 	proxy->setRotation(-90);
 	
 
-    net_status = 0;
     label_net_status = new QLabel();
-    label_net_status->setText(tr("ç½‘ç»œè¿žæŽ¥çŠ¶æ€       ")  );
-    label_net_status->setAttribute(Qt::WA_TranslucentBackground);//è®¾ç½® é€æ˜Ž
+    label_net_status->setAttribute(Qt::WA_TranslucentBackground);
     label_net_status->setPixmap(QPixmap(":/pic/offline.bmp"));
     label_net_status->move(15,50);
     proxy = this->addWidget(label_net_status);
@@ -82,7 +80,7 @@ void  myscene_num_call::widget_init()
 
     label_bottom_status = new QLabel();
     label_bottom_status->setPalette(pe);
-    label_bottom_status->setAttribute(Qt::WA_TranslucentBackground);//è®¾ç½® é€æ˜Ž
+    label_bottom_status->setAttribute(Qt::WA_TranslucentBackground);
     label_bottom_status->setFont( QFont(FONE_NAME, TIME_DATE_FONTSIZE) );
     label_bottom_status->setGeometry(SCREEN_WID-60,560,560,50);
     proxy = this->addWidget(label_bottom_status);
@@ -91,7 +89,7 @@ void  myscene_num_call::widget_init()
     //call number  
     label_numcall = new QLabel();
 	label_numcall->setPalette(pe);
-    label_numcall->setAttribute(Qt::WA_TranslucentBackground);//è®¾ç½® é€æ˜Ž
+    label_numcall->setAttribute(Qt::WA_TranslucentBackground);
     label_numcall->setFont( QFont(FONE_NAME, TIME_DATE_FONTSIZE*2) );
     label_numcall->setGeometry(80,530,400,120);
     proxy = this->addWidget(label_numcall);
@@ -111,8 +109,7 @@ void  myscene_num_call::widget_init()
         bt_numcall[i]->setGeometry( xpos, ypos, NUM_Y_HEIGHT,NUM_X_WID);  //pixmap.width() ,pixmap.height());
         bt_numcall[i]->setAttribute(Qt::WA_TranslucentBackground); 
         if( i < 12){
-			bt_numcall[i]->setStyleSheet("QPushButton{"
-                                    "border:3px solid white;");  //¿í¶ÈÎª3pxµÄºìÉ«±ß¿ò
+			bt_numcall[i]->setStyleSheet("QPushButton{" "border:3px solid white;}");  //¿í¶ÈÎª3pxµÄºìÉ«±ß¿ò
 			bt_numcall[i]->setFont( QFont(FONE_NAME, TIME_DATE_FONTSIZE*1.5) );
 			bt_numcall[i]->setPalette(pe);
 			bt_numcall[i]->setText(  call_num_seq[i]  );

@@ -19,6 +19,8 @@ public:
 
 	QLabel *label_time;
 	QLabel *label_date;
+	QLabel *label_net_status;
+	
 protected:	
 //	void keyPressEvent(QKeyEvent *event);  
 //	void mousePressEvent(QGraphicsSceneMouseEvent *event);	
@@ -52,7 +54,6 @@ signals:
         QString str_numcall;
 
 
-        QLabel *label_net_status;
         int net_status;
 
         QLabel *label_bottom_status;

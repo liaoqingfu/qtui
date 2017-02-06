@@ -27,6 +27,12 @@ void  myscene_pic::widget_init()
 	//label_back->setText("PIC CALL WINDOWS");
 	this->addWidget(label_back);
 
+	label_net_status = new QLabel();
+	label_net_status->setAttribute(Qt::WA_TranslucentBackground);
+	label_net_status->setPixmap(QPixmap(":/pic/offline.bmp"));
+	label_net_status->move(15,50);
+	proxy = this->addWidget(label_net_status);
+	proxy->setRotation(-90);
 
 	label_time = new QLabel("");
     QPalette pe;

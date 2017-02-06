@@ -13,6 +13,8 @@ public:
     explicit myscene_pic(class MyView * pmv , QObject *parent = 0);
 	QLabel *label_time;
 	QLabel *label_date;  
+	QLabel *label_net_status;
+	
 protected:	
 
   
