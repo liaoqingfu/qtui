@@ -25,7 +25,7 @@ signals:
 public slots:
 	void  bt_leftCallClicked();
 	void  bt_rightCallClicked( );
-	bool verifyLocalTime(QNetworkReply *reply);
+	//bool verifyLocalTime(QNetworkReply *reply);
 	
 //	void recv_slot();
 
@@ -46,7 +46,7 @@ private:
 
 
 		QNetworkAccessManager manager;
-		void verifyTime();
+	//	void verifyTime();
 
   
 };	

@@ -11,24 +11,19 @@
 
 #include "video/main_api.h"
 
+/*
 #define CALL_IDLE  			0
 #define CALL_AUDIO_OUT 		(1 << 0)
 #define CALL_AUDIO_TALK 	(CALL_AUDIO_OUT << 1)
 #define CALL_VIDEO_OUT 		(1 << 2)
-#define CALL_VIDEO_TALK 	(CALL_VIDEO_OUT << 1)
-
-
-
-
-
-
+#define CALL_VIDEO_TALK 	(CALL_VIDEO_OUT << 1) */
 
 class myscene_calling : public QGraphicsScene  
 {  
 	Q_OBJECT  
 public:  
     explicit myscene_calling(class MyView * pmv , QObject *parent = 0);
-	int 	startCall( char * dstId );   //char * sipServerIp, char * localId, 
+	int 	startCall( char * dstId ,talk_type_t talk_type);   //char * sipServerIp, char * localId, 
 	void 	startCapture(  );
 	int 	answerCall(  );
 	int 	stopCall(  );
@@ -41,7 +36,8 @@ public:
 	int  sip_init_once( char * sipServerIp );
 	QLabel *label_calling;
     class MyView * pmv;
-  	int  SipTalkType;	//0 : no talk,	1: in talking,	 2:video talk
+  	talk_type_t  SipTalkType;	//0 : no talk,	1: in talking,	 2:video talk
+  	int  talkStartTime;
 	int    	video_init_error;//0: init success
 	int 	m_nTimeoutId;
 

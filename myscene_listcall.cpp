@@ -10,12 +10,10 @@
 #define LIST_START_X     150  
 #define LIST_START_Y     SCREEN_HEIGHT 
 
-#define LIST_END_X      (SCREEN_WID - 150) 
-
-#define  LIST_WIDTH  		( (LIST_END_X - LIST_START_X) / (LIST_ROW ) )
+#define  LIST_WIDTH  		( (SCREEN_WID - LIST_START_X) / (LIST_ROW +2) )
 
 extern ncs_cfg_t cfg;
-
+extern int list_call_id;  //ºô½Ðid
 
 void  myscene_list::widget_init()
 {
@@ -63,6 +61,15 @@ void  myscene_list::widget_init()
 	proxy = this->addWidget(label_date);
 	proxy->setRotation(-90);
 
+	label_listcall = new QLabel();
+	label_listcall->setPalette(pe);
+	label_listcall->setAttribute(Qt::WA_TranslucentBackground);
+	label_listcall->setFont( QFont(FONE_NAME, TIME_DATE_FONTSIZE*2) );
+	label_listcall->setGeometry(60,450,400,120);
+	proxy = this->addWidget(label_listcall);
+	proxy->setRotation(-90);
+		
+
 	QPixmap pixmap;
 
 	bg_listcall = new QButtonGroup;
@@ -79,7 +86,7 @@ void  myscene_list::widget_init()
 		}
 		else{
 			int j = i - LIST_COLUMN*LIST_ROW ;
-			xpos =  LIST_END_X + ((int)( j / 3))*LIST_WIDTH;
+			xpos =  LIST_START_X + ((int)( i/LIST_COLUMN))*LIST_WIDTH;
 			ypos =  LIST_START_Y - (j % 3) * NUM_Y_HEIGHT;
 			bt_listcall[i]->setGeometry( xpos, ypos, NUM_Y_HEIGHT,LIST_WIDTH);
 			if( j < 3 )
@@ -123,6 +130,7 @@ void myscene_list::bt_listcallClicked( int buttonID)
 
     if ( buttonID < LIST_COLUMN*LIST_ROW ) {
         call_id_index  = (curr_page_num - 1) * LIST_COLUMN*LIST_ROW + buttonID ;
+		label_listcall->setText( cfg.list_target[call_id_index] );
     }
 	else if ( buttonID == LIST_COLUMN*LIST_ROW) //pre page
 	{
@@ -130,11 +138,17 @@ void myscene_list::bt_listcallClicked( int buttonID)
     }
 	else if ( buttonID == LIST_COLUMN*LIST_ROW +1) //call
 	{
-		qDebug() << "call to" << cfg.list_target[call_id_index];
-       if( pmv->scene_calling->startCall( cfg.list_target[call_id_index].toLatin1().data() ) > 0) {
-			pmv->changeWindowType( WINDOW_TYPE_CALLING); 
-			qDebug() << "CHANGE TO CALLING WINDOW" ;
+		list_call_id = call_id_index;
+		qDebug() << "call to" << cfg.list_target[list_call_id];
+		pmv->changeWindowType( WINDOW_TYPE_CALLING); 
+       if( pmv->scene_calling->startCall( cfg.list_target[list_call_id].toLatin1().data() , TS_SIP_TALK) > 0) {
+			if(cfg.list_link[list_call_id])  { //listcall alarm enable
+				gpio_set( GPO_SHORT_ALARM,	 cfg.short_o1_normal_mode ? 0 : 1);
+				printf_log(LOG_IS_INFO, " 		---short alarm out start--   \n");
+			}
 	   	}
+	   else
+	   		pmv->changeWindowType( WINDOW_TYPE_LIST_CALL); 
     }
     else if ( buttonID == LIST_COLUMN*LIST_ROW + 2) //next page
     {

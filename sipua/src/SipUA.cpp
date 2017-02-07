@@ -698,7 +698,7 @@ void CSipUA::sip_event_registration_success(eXosip_event_t *p_event)
 						{
 							parse.set_delimit('-');
 							parse.set_body(p_uri_param->gvalue);
-							if (parse.m_plain_label.count == 6)
+							if (parse.m_plain_label.count >= 6)
 							{
 								m_server_date.tm_year = atoi(parse.m_plain_label.p_text[0]) - 1900;
 								m_server_date.tm_mon = atoi(parse.m_plain_label.p_text[1]) - 1;

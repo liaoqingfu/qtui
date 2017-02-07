@@ -4,13 +4,12 @@
 #include "myview.h" 
 #include "sipua/include/eXosip2/eXosip.h" 
 
-#define CALL_TIMEOUT   10000    // second
+#define CALL_TIMEOUT   25000    // second
 
 #define VIDEO_RTP_FRAME_LEN_MAX		(1024*40)
 #define VIDEO_ENABLE  1
 //#define LOCAL_VIDEO_DISPLAY
 
-#define HARD_KEY_TRIG  0
 
 #define CAPTURE_WIDTH  1280
 #define CAPTURE_HEIGHT 720
@@ -18,8 +17,7 @@
 #define CAPTURE_OUT_WIDTH   1024
 #define CAPTURE_OUT_HEIGHT  600
 
-
-
+int list_call_id = -1;  //ºô½Ðid
 
 extern ncs_cfg_t cfg;
 extern "C"  int _Z6xc9000v( );
@@ -36,7 +34,7 @@ void * capture_thread(void * pParam)
 	int enc_re_len = 0; 
 	char *enc_re_data_ptr = NULL;
 	if( bCaptureThread ){
-		printf_log(LOG_IS_INFO, "error call capture thread\n");
+		printf_log(LOG_IS_INFO, "error call capture thread alread run\n");
 		return NULL;
 	}
 	else
@@ -96,6 +94,7 @@ void  dec_callback(void * pParam)
 void sipEvent_callback(eXosip_event_t *p_event, void *pParam)
 {
 	static int failCount = 0;
+	static int b_verifyTime = 0;
 	myscene_calling * pMysceneCalling = ( myscene_calling * )pParam;
 	if (pParam != NULL && p_event != NULL)
 	{
@@ -104,9 +103,23 @@ void sipEvent_callback(eXosip_event_t *p_event, void *pParam)
 		case EXOSIP_REGISTRATION_SUCCESS:
 			printf_log(LOG_IS_INFO, "EXOSIP_REGISTRATION_SUCCESS\n");
 			sip_reg_success = 1;
+			if( !b_verifyTime ){
+				char			p_time[64];
+				//sprintf(p_time, "date -s %04d.%02d.%02d-%02d:%02d:%02d", year, month, day, hour, minute, second);
+				strftime(p_time, sizeof(p_time), "date -s %Y.%m.%d-%X ", &pMysceneCalling->sip_ua_1->m_server_date);
+				printf_log(LOG_IS_INFO, "		time set:%s\n",p_time);
+				//QString str= "date -s \"" + pMysceneCalling->sip_ua_1->m_server_date   time.toString("yyyy-MM-dd hh:mm:ss") + "\"";
+    			system_cmd_exec( p_time );
+				b_verifyTime = 1;
+			}
 			failCount = 0;
 			break;
 		case EXOSIP_REGISTRATION_FAILURE:
+			char			p_time[64];
+			//sprintf(p_time, "date -s %04d.%02d.%02d-%02d:%02d:%02d", year, month, day, hour, minute, second);
+			strftime(p_time, sizeof(p_time), "date -s %Y.%m.%d-%X ", &pMysceneCalling->sip_ua_1->m_server_date);
+			printf_log(LOG_IS_INFO, "		time set:%s\n",p_time);
+			
 			if( failCount > 3)
 				sip_reg_success = 0;
 			++failCount ;
@@ -146,7 +159,7 @@ void sipEvent_callback(eXosip_event_t *p_event, void *pParam)
 void  myscene_calling::widget_init()
 {
 	qDebug() << "myscene_calling widget_init"; 
-	SipTalkType = CALL_IDLE;
+	SipTalkType = TS_IDLE;
 	pid_capture = 0;
 
     QGraphicsProxyWidget * proxy ;
@@ -193,9 +206,8 @@ void  myscene_calling::widget_init()
 
 	connect( bt_stopCall ,SIGNAL(clicked( )), this, SLOT(bt_stopCallClicked( )));
 
-	sip_init_once( cfg.sip_ip.toLatin1().data() );
-
 	sip_ua_1 = NULL;
+	sip_init_once( cfg.sip_ip.toLatin1().data() );
 	bExitCaptureThread = 0;
 
 }
@@ -291,31 +303,31 @@ void myscene_calling::startCapture(  )
 #endif
 }
 
-int myscene_calling::startCall( char * dstId)
+int myscene_calling::startCall( char * dstId ,talk_type_t talk_type )
 {
 	if( SipTalkType ){
 		printf_log(LOG_IS_INFO,"startCall error:%d\n", SipTalkType);
 		return SipTalkType;
 	}
 	if( (sip_ua_1 == NULL) ){
-		//if( sip_init_once ( sipServerIp ) < 0) 
+		printf_log(LOG_IS_ERR,"error: sip_ua_1 is NULL\n");
 		return -1;
 	}
-	SipTalkType = CALL_AUDIO_OUT;
+	SipTalkType = TS_RING;
 	label_calling->setText("CALLING... ...");
 	printf_log(LOG_IS_INFO,"start Call to:%s\n", dstId);
 
 	startCapture(  );
 	
 	if( sip_ua_1->talk(dstId, NULL, NULL) ){
-		SipTalkType = video_init_error ? CALL_AUDIO_OUT: CALL_VIDEO_OUT;   //should modify to justify video or audio
+		SipTalkType = talk_type; //video_init_error ? CALL_AUDIO_OUT: CALL_VIDEO_OUT;   //should modify to justify video or audio
 		//add timeout event
 		m_nTimeoutId = startTimer(CALL_TIMEOUT);  
 		printf_log(LOG_IS_INFO,"StartCall timeout begin\n");
 		
 	}
 	else {
-		SipTalkType = CALL_IDLE;
+		SipTalkType = TS_IDLE;
 		label_calling->setText("");
 	}
 		
@@ -372,7 +384,7 @@ int myscene_calling::startCall( char * dstId)
 void 	myscene_calling::inCall(  )
 {
 	label_calling->setText("TALKING... ...");
-	SipTalkType = SipTalkType << 1;  //  CALL_AUDIO_TALK     CALL_VIDEO_TALK;
+	SipTalkType = TS_IN_TALK;  //  CALL_AUDIO_TALK     CALL_VIDEO_TALK;
 }
 
 
@@ -381,7 +393,7 @@ int myscene_calling::answerCall()
 {
 	startCapture(	);
 	if( sip_ua_1->answer() ){
-		SipTalkType = video_init_error ? CALL_AUDIO_TALK: CALL_VIDEO_TALK;
+		SipTalkType = TS_IN_TALK;
 		return SipTalkType;
 	}
 	return -1;
@@ -398,7 +410,15 @@ int myscene_calling::stopCall()
 		}
 		sip_ua_1->set_video_recvdata_callback(NULL, NULL);
 		sip_ua_1->task_end();
-		SipTalkType = CALL_IDLE;
+		SipTalkType = TS_IDLE;
+		
+		if( list_call_id >= 0 ){
+			if(cfg.list_link[list_call_id]){  //listcall alarm enable
+				gpio_set( GPO_SHORT_ALARM,	 cfg.short_o1_normal_mode );
+				printf_log(LOG_IS_INFO, " 		---short alarm out end--   \n");
+			}
+			list_call_id = -1;
+		}
 		pmv->changeWindowType( pmv->topWindowType );
 	}
 	else{
@@ -417,7 +437,6 @@ void  myscene_calling::bt_stopCallClicked()
 {
 	pmv->changeWindowType( pmv->topWindowType );
 	stopCall();
-	gpio_set( LEFT_LED , 0);
 	qDebug() << "bt_stopCallClicked" << cfg.ip_keyleft  << cfg.port_keyleft;
 }
 
@@ -440,7 +459,7 @@ void myscene_calling::timerEvent( QTimerEvent *event )
 	if( event->timerId() == m_nTimeoutId)
 	{
 		killTimer( m_nTimeoutId ); 
-		if( (SipTalkType != CALL_AUDIO_TALK) && ( SipTalkType != CALL_VIDEO_TALK)) {
+		if( SipTalkType != TS_IN_TALK) {
 			printf_log(LOG_IS_INFO, "Call Timeout, auto stopCall\n");
 			#ifndef LOCAL_VIDEO_DISPLAY
 			stopCall();

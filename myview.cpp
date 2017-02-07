@@ -3,18 +3,113 @@
 
 #include "api/misc.h"
 
+#define HARD_KEY_TRIG  1
+
+#define  LED_SLEEP_TIME		(1000*200)
+
+#define  LED_BLINK_FAST		((1000*200) / LED_SLEEP_TIME)
+#define  LED_BLINK_NORMAL		((1000*600) / LED_SLEEP_TIME)
+#define  LED_BLINK_SLOW		((1000*1000) / LED_SLEEP_TIME)
 
 ncs_cfg_t cfg;
 extern int 	sip_reg_success;
 
+//cfg.short_i1_alarm_mode     cfg.short_o1_normal_mode
+
 void MyView::gpio_init(  )
 {
-	gpio_open(LEFT_KEY,  GPIO_IN); 
-	gpio_open(RIGHT_KEY, GPIO_IN); 
+	gpio_open(GPI_LEFT_KEY,  	 GPIO_IN); 
+	gpio_open(GPI_RIGHT_KEY, 	 GPIO_IN); 
+	gpio_open(GPI_SHORT_ALARM , GPIO_IN);  
 	
-	gpio_open(LEFT_LED , GPIO_OUT); 
-	gpio_open(RIGHT_LED , GPIO_OUT);  
+	gpio_open(GPO_LED_CALL ,    GPIO_OUT); 
+	gpio_open(GPO_LED_WARNING , GPIO_OUT);  
+	gpio_open(GPO_SHORT_ALARM , GPIO_OUT);  
+	gpio_set( GPO_SHORT_ALARM,	 cfg.short_o1_normal_mode);
+}
+void led_display(int state)
+{
+	static int led_flag = 0; 
+	led_flag = led_flag ? 0 : 1; 
+	static int count = 0;
+	
+	switch(state) {
+        case  LED_OFFLINE:
+            //把有按键灯慢闪
+            if( count >= LED_BLINK_NORMAL ) {
+	            gpio_set( GPO_LED_CALL,led_flag);
+	            gpio_set( GPO_LED_WARNING,led_flag);
+            }
+            break ;
+        case  LED_ONLINE:
+            if( count >= LED_BLINK_SLOW ) {
+	            gpio_set( GPO_LED_CALL,LED_ON);
+	            gpio_set( GPO_LED_WARNING,LED_ON);
+            }
+            break;
+        case  LED_BROADCAST:
+            //把有按键灯快闪
+			if( count >= LED_BLINK_FAST ) {
+				gpio_set( GPO_LED_CALL,led_flag);
+            	gpio_set( GPO_LED_WARNING,led_flag);
+			}
+            break;
+		case  LED_TALK:
+            if( count >= LED_BLINK_FAST ) {
+				gpio_set(GPO_LED_CALL,led_flag);
+            	gpio_set(GPO_LED_WARNING,led_flag);
+            } 
+            break;
+        default: //case  LED_RING:
+            if( count >= LED_BLINK_NORMAL ) {
+				gpio_set(GPO_LED_CALL,led_flag);
+            	gpio_set(GPO_LED_WARNING,led_flag);
+            } 
+            break;
+		break;
+	}
+	++count;
+}
 
+
+//key detect ,  led flash
+void * keyTrig_led_thread(void * pParam)
+{
+	static int talkStatus;
+	static int b_shortAlarm = 0;
+	MyView * pMyView = ( MyView * )pParam;
+	printf_log(LOG_IS_INFO, " Start keyDetect thread \n");
+	while(1)
+	{
+		talkStatus = pMyView->scene_calling->SipTalkType;
+		if( talkStatus == TS_IDLE ) {
+			#if  HARD_KEY_TRIG
+			if( gpio_get( GPI_LEFT_KEY ) == 0)
+				pMyView->scene_main->bt_leftCallClicked();
+
+			if( gpio_get( GPI_RIGHT_KEY ) == 0)
+				pMyView->scene_main->bt_rightCallClicked();
+
+			#endif
+			//short In port detect
+			if( gpio_get( GPI_SHORT_ALARM ) != cfg.short_i1_alarm_mode )
+			{
+				if( !b_shortAlarm ) {
+					printf_log(LOG_IS_INFO, " 		---short alarm detected--   \n");
+					b_shortAlarm = 1;
+				}
+			}else
+				b_shortAlarm = 0;
+			
+			led_display( sip_reg_success );   //sip_reg_success ? LED_ONLINE : LED_OFFLINE
+		}
+		else {
+			led_display( talkStatus );  
+		}
+		usleep( LED_SLEEP_TIME );
+	}
+	printf_log(LOG_IS_INFO, " Exit keyDetect thread \n");
+	return NULL;
 }
 
 MyView::~MyView( )
@@ -26,17 +121,6 @@ MyView::~MyView( )
 MyView::MyView(QWidget *parent) :  
 	QGraphicsView(parent)  
 {  
-    /*
-    QPixmap tilePixmap(64, 64);
-    tilePixmap.fill(Qt::white);
-    QPainter tilePainter(&tilePixmap);
-    QColor color(220, 220, 220);
-    tilePainter.fillRect(0, 0, 32, 32, color);
-    tilePainter.fillRect(32, 32, 32, 32, color);
-    tilePainter.end();
-
-    setBackgroundBrush(tilePixmap);*/
-
 	ReadAllSettings( );
 
     WindowType = WINDOW_TYPE_MAIN;
@@ -64,6 +148,8 @@ MyView::MyView(QWidget *parent) :
 	
 	m_nTimerId = startTimer(1000);  
 	timerEvent( new QTimerEvent(m_nTimerId) ) ;
+	if (pthread_create(&pid_keyDetect, NULL, keyTrig_led_thread, this) != 0)
+		printf("keyDetect thread  create error:%s\n", strerror(errno));
 }  
 
 void MyView::timerEvent( QTimerEvent *event )
@@ -71,69 +157,55 @@ void MyView::timerEvent( QTimerEvent *event )
 {
 	QTime qtimeObj = QTime::currentTime();
 	static int minute = -1;
-	static int netStatusChanged = 1;
-	
-#if  HARD_KEY_TRIG
-	if( gpio_get( LEFT_KEY ) == 0)
-		scene_main->bt_leftCallClicked();
+	static int netStatusChanged = -1;
+ {
+		QString str;
+		str.sprintf("%02d:%02d",qtimeObj.hour(),qtimeObj.minute() ); 
 
-	if( gpio_get( RIGHT_KEY ) == 0)
-		scene_main->bt_rightCallClicked();
-#endif
-	QString str;
-	str.sprintf("%02d:%02d",qtimeObj.hour(),qtimeObj.minute() ); 
-
-	if(netStatusChanged != sip_reg_success)
-		netStatusChanged = 1;
-	
-	if( (minute != -1) )
-	{
-		switch ( WindowType )
-		{
-			case WINDOW_TYPE_MAIN:	
-				scene_main->label_time->setText(str);
-				scene_main->label_date->setText(QDate::currentDate().toString(tr("yyyy-MM-dd dddd")));  
-			//	if( netStatusChanged )
-			//        scene_main->label_net_status->setPixmap( sip_reg_success ? QPixmap(":/pic/online.bmp") : QPixmap(":/pic/offline.bmp") );
-				break;
-			case WINDOW_TYPE_NUM_CALL:	
-				scene_num_call->label_time->setText(str);
-				scene_num_call->label_date->setText(QDate::currentDate().toString(tr("dddd")));  
-				if( netStatusChanged )
-					scene_num_call->label_net_status->setPixmap( sip_reg_success ? QPixmap(":/pic/online.bmp") : QPixmap(":/pic/offline.bmp") );
-				break;
-			case WINDOW_TYPE_LIST_CALL:  
-				scene_list->label_time->setText(str);
-				scene_list->label_date->setText(QDate::currentDate().toString(tr("dddd")));  
-				if( netStatusChanged )
-					scene_list->label_net_status->setPixmap( sip_reg_success ? QPixmap(":/pic/online.bmp") : QPixmap(":/pic/offline.bmp") );
-				break;
-			case WINDOW_TYPE_PIC_CALL:
-				scene_pic->label_time->setText(str);
-				scene_pic->label_date->setText(QDate::currentDate().toString(tr("dddd")));  
-				if( netStatusChanged )
-					scene_pic->label_net_status->setPixmap( sip_reg_success ? QPixmap(":/pic/online.bmp") : QPixmap(":/pic/offline.bmp") );
-				break;
-
+		if(netStatusChanged != sip_reg_success){
+			netStatusChanged = sip_reg_success;
+			scene_num_call->label_net_status->setPixmap( sip_reg_success ? QPixmap(":/pic/online.bmp") : QPixmap(":/pic/offline.bmp") );
+			scene_list->label_net_status->setPixmap( sip_reg_success ? QPixmap(":/pic/online.bmp") : QPixmap(":/pic/offline.bmp") );
+			scene_pic->label_net_status->setPixmap( sip_reg_success ? QPixmap(":/pic/online.bmp") : QPixmap(":/pic/offline.bmp") );
 		}
-	}
-	else{
-		scene_main->label_time->setText(str);
-		scene_main->label_date->setText(QDate::currentDate().toString(tr("yyyy-MM-dd dddd"))); 
-		scene_num_call->label_time->setText(str);
-		scene_num_call->label_date->setText(QDate::currentDate().toString(tr("dddd")));  
-		scene_list->label_time->setText(str);
-		scene_list->label_date->setText(QDate::currentDate().toString(tr("dddd"))); 
-		scene_pic->label_time->setText(str);
-		scene_pic->label_date->setText(QDate::currentDate().toString(tr("dddd"))); 
-	//	scene_main->label_net_status->setPixmap( sip_reg_success ? QPixmap(":/pic/online.bmp") : QPixmap(":/pic/offline.bmp") );
-		scene_num_call->label_net_status->setPixmap( sip_reg_success ? QPixmap(":/pic/online.bmp") : QPixmap(":/pic/offline.bmp") );
-		scene_list->label_net_status->setPixmap( sip_reg_success ? QPixmap(":/pic/online.bmp") : QPixmap(":/pic/offline.bmp") );
-		scene_pic->label_net_status->setPixmap( sip_reg_success ? QPixmap(":/pic/online.bmp") : QPixmap(":/pic/offline.bmp") );
+			
+		if( (minute != -1) )
+		{
+			switch ( WindowType )
+			{
+				case WINDOW_TYPE_MAIN:	
+					scene_main->label_time->setText(str);
+					scene_main->label_date->setText(QDate::currentDate().toString(tr("yyyy-MM-dd dddd")));  
+					break;
+				case WINDOW_TYPE_NUM_CALL:	
+					scene_num_call->label_time->setText(str);
+					scene_num_call->label_date->setText(QDate::currentDate().toString(tr("dddd")));  
+					break;
+				case WINDOW_TYPE_LIST_CALL:  
+					scene_list->label_time->setText(str);
+					scene_list->label_date->setText(QDate::currentDate().toString(tr("dddd")));  
+					break;
+				case WINDOW_TYPE_PIC_CALL:
+					scene_pic->label_time->setText(str);
+					scene_pic->label_date->setText(QDate::currentDate().toString(tr("dddd")));  
+					break;
 
+			}
+		}
+		else{
+			scene_main->label_time->setText(str);
+			scene_main->label_date->setText(QDate::currentDate().toString(tr("yyyy-MM-dd dddd"))); 
+			scene_num_call->label_time->setText(str);
+			scene_num_call->label_date->setText(QDate::currentDate().toString(tr("dddd")));  
+			scene_list->label_time->setText(str);
+			scene_list->label_date->setText(QDate::currentDate().toString(tr("dddd"))); 
+			scene_pic->label_time->setText(str);
+			scene_pic->label_date->setText(QDate::currentDate().toString(tr("dddd"))); 
+		//	scene_main->label_net_status->setPixmap( sip_reg_success ? QPixmap(":/pic/online.bmp") : QPixmap(":/pic/offline.bmp") );
+			
+		}
+		minute = qtimeObj.minute();
 	}
-	minute = qtimeObj.minute();
-	netStatusChanged = 0;	
 } 
 
 
@@ -181,7 +253,7 @@ void MyView::changeWindowType( int winType )
 		}
 	}
 	WindowType = winType;
-	qDebug() << "<topW:>" << topWindowType << "<desW:>" <<winType;
+	qDebug() << "		<topW:>" << topWindowType << "<desW:>" <<winType;
 }
 /*
 
@@ -262,7 +334,7 @@ QList<QHostAddress> list = QNetworkInterface::allAddresses();
     }  
 
 }
-void ncs_cfg_netword_set(char* ip ,char* netmask,char* gw,char* dns1,char* dns2,char* mac_addr)
+void  cfg_netword_set(char* ip ,char* netmask,char* gw,char* dns1,char* dns2,char* mac_addr)
 {
 	
     system_cmd_exec("rm -f /etc/resolv.conf");
@@ -273,7 +345,7 @@ void ncs_cfg_netword_set(char* ip ,char* netmask,char* gw,char* dns1,char* dns2,
 	if (gw) system_cmd_exec("route add default gw %s", gw);
 }
 
-void ncs_mac_addr_get(char* ip,char* mac_addr)
+void  mac_addr_get(char* ip,char* mac_addr)
 {
     unsigned int ip_addr = ntohl(inet_addr(ip));
     sprintf(mac_addr, "%02x:%02x:%02x:%02x:%02x:%02x", 00, 0x89, (ip_addr >> 24 & 0xff),
@@ -293,7 +365,7 @@ void MyView::ReadAllSettings( )
 	cfg.dns2 = settings.value( "terminal/dns2" ).toString();
 	cfg.mac_addr = settings.value( "terminal/mac_addr" ).toString();
 
-	ncs_cfg_netword_set(cfg.local_ip.toLatin1().data() ,cfg.netmask.toLatin1().data(),
+	 cfg_netword_set(cfg.local_ip.toLatin1().data() ,cfg.netmask.toLatin1().data(),
 		cfg.gateway.toLatin1().data() ,cfg.dns1.toLatin1().data(),
 		cfg.dns2.toLatin1().data() ,cfg.mac_addr.toLatin1().data());
 
@@ -400,7 +472,7 @@ ReadSettings( "video_cfg/crop_x", &crop_x);
 	
 	if (cfg->is_dynamic_ip) {
 		SPON_LOG_INFO("NOT SUPPORT DHCP\n");
-		ncs_cfg_netword_set(NULL ,NULL,gw,gw,gw,cfg->mac_addr);
+		 cfg_netword_set(NULL ,NULL,gw,gw,gw,cfg->mac_addr);
 
 	system_cmd_exec("rm -f /etc/resolv.conf");
     if (dns1) system_cmd_exec("echo nameserver %s > /etc/resolv.conf", dns1);
@@ -490,8 +562,8 @@ ReadSettings( "video_cfg/crop_x", &crop_x);
 	cfg->borad_check_audio_play_time = lp_config_get_int(lpconfig, "short_cfg", "audio_play_time", 10);
 	cfg->board_check_enable = lp_config_get_int(lpconfig, "short_cfg", "enable_speaker_test", 1);
 	
-	cfg->ncs_cash_server_offline_trigger_enable = lp_config_get_int(lpconfig, "short_cfg", "enable_offdoor", 1);
-	cfg->ncs_cash_server_autodoor_trigger_enable = lp_config_get_int(lpconfig, "short_cfg", "enable_autodoor", 0);
+	cfg-> cash_server_offline_trigger_enable = lp_config_get_int(lpconfig, "short_cfg", "enable_offdoor", 1);
+	cfg-> cash_server_autodoor_trigger_enable = lp_config_get_int(lpconfig, "short_cfg", "enable_autodoor", 0);
 
 //[alone_cfg]
 	cfg->enable_onvif =  lp_config_get_int(lpconfig, "video_cfg", "enable_onvif", 1); 
@@ -565,25 +637,25 @@ ReadSettings( "video_cfg/crop_x", &crop_x);
 	cfg->server_request_peroid = (login_period < 3 || login_period > 30)? 3:login_period;
 
 	
-	void ncs_cfg_save(void) 
+	void  cfg_save(void) 
 	{
 		SPON_LOG_SYS("cp -fr %s  %s",INI_CONFIG_FILE,INI_CONFIG_LOCAL_FILE);
 		system_cmd_exec("cp -fr %s	%s",INI_CONFIG_FILE,INI_CONFIG_LOCAL_FILE);
 	}
 	
-	void ncs_cfg_save_back(void) 
+	void  cfg_save_back(void) 
 	{
 		SPON_LOG_SYS("cp -fr %s  %s",INI_CONFIG_FILE,INI_CONFIG_LOCAL_BACK_FILE);
 		system_cmd_exec("cp -fr %s	%s",INI_CONFIG_FILE,INI_CONFIG_LOCAL_BACK_FILE);
 	}
 	
-	void ncs_cfg_last_reload(void) 
+	void  cfg_last_reload(void) 
 	{
 		SPON_LOG_SYS("cp -fr %s  %s",INI_CONFIG_LOCAL_BACK_FILE,INI_CONFIG_LOCAL_FILE);
 		system_cmd_exec("cp -fr %s	%s",INI_CONFIG_LOCAL_BACK_FILE,INI_CONFIG_LOCAL_FILE);
 	}
 	
-	void ncs_cfg_factory_reload(void) 
+	void  cfg_factory_reload(void) 
 	{
 		SPON_LOG_SYS("cp -fr %s  %s",INI_CONFIG_FACTORY_LOCAL_FILE,INI_CONFIG_LOCAL_FILE);
 		system_cmd_exec("cp -fr %s	%s",INI_CONFIG_FACTORY_LOCAL_FILE,INI_CONFIG_LOCAL_FILE);

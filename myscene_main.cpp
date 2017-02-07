@@ -4,7 +4,6 @@
 #include "myview.h" 
 
 
-#define HARD_KEY_TRIG  0
 
 extern ncs_cfg_t cfg;
 extern "C"  int _Z6xc9000v( );
@@ -12,7 +11,7 @@ extern "C"  int _Z6xc9000v( );
 extern "C"  void pt( );
 
 
-
+/*
 void myscene_main::verifyTime()
 {
     QNetworkRequest request(QUrl("http://open.baidu.com/special/time/"));
@@ -46,7 +45,7 @@ bool myscene_main::verifyLocalTime(QNetworkReply *reply)
 #endif
     return false;
 }
-
+*/
 void  myscene_main::widget_init()
 {
 	qDebug() << "myscene_main widget_init"; 
@@ -118,8 +117,7 @@ void  myscene_main::widget_init()
 void  myscene_main::bt_leftCallClicked()
 {
 	pmv->changeWindowType( WINDOW_TYPE_CALLING );
-	gpio_set( LEFT_LED , 1);
-	if( pmv->scene_calling->startCall(pmv->scene_calling->sip_ua_1->m_call_target[0] ) > 0)  //cfg.ip_keyleft.toLatin1().data()
+	if( pmv->scene_calling->startCall(pmv->scene_calling->sip_ua_1->m_call_target[0],TS_SIP_TALK ) > 0)  //cfg.ip_keyleft.toLatin1().data()
 		printf( "bt_leftCallClicked:%s\n", pmv->scene_calling->sip_ua_1->m_call_target[0]); //cfg.ip_keyleft	<< cfg.port_keyleft;
 	else
 		pmv->changeWindowType( WINDOW_TYPE_MAIN);
@@ -128,8 +126,7 @@ void  myscene_main::bt_leftCallClicked()
 void  myscene_main::bt_rightCallClicked( )
 {
 	pmv->changeWindowType( WINDOW_TYPE_CALLING );
-	gpio_set( RIGHT_LED , 1);
-	if( pmv->scene_calling->startCall( pmv->scene_calling->sip_ua_1->m_call_target[1] ) > 0)  //cfg.ip_keyright.toLatin1().data()
+	if( pmv->scene_calling->startCall( pmv->scene_calling->sip_ua_1->m_call_target[1],TS_SIP_TALK ) > 0)  //cfg.ip_keyright.toLatin1().data()
 		printf( "bt_rightCallClicked:%s\n", pmv->scene_calling->sip_ua_1->m_call_target[1]); //cfg.ip_keyright << cfg.port_keyright;
 	else
 		pmv->changeWindowType( WINDOW_TYPE_MAIN);
@@ -158,34 +155,7 @@ void myscene_main::changed(const QList<QRectF> &region)
 }  
 
 
-/*
-void myscene_main::timerEvent( QTimerEvent *event )
 
-{
-	QTime qtimeObj = QTime::currentTime();
-	static int minute = -1;
-	if( pmv->WindowType != WINDOW_TYPE_MAIN)
-		return;
-
-	
-#if  HARD_KEY_TRIG
-	if( gpio_get( LEFT_KEY ) == 0)
-		bt_leftCallClicked();
-
-	if( gpio_get( RIGHT_KEY ) == 0)
-		bt_rightCallClicked();
-#endif
-	
-	if( minute != qtimeObj.minute() ){
-		minute = qtimeObj.minute();
-		QString str;
-		str.sprintf("%02d:%02d",qtimeObj.hour(),qtimeObj.minute() );  //, qtimeObj.second()
-		label_time->setText(str);
-
-		label_date->setText(QDate::currentDate().toString(tr("yyyy-MM-dd dddd")));  
-	}
-
-} 
 /*
 char *name[]={"星期日","星期一","星期二","星期三","星期四","星期五","星期六"};   
 void main(void)   

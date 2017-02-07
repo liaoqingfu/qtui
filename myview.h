@@ -20,6 +20,11 @@ public:
 	int WindowType ;
 	int topWindowType;
 	myscene_calling * scene_calling;
+	myscene_main *scene_main;
+    myscene_num_call *scene_num_call;
+	myscene_video *scene_video;
+	myscene_list * scene_list;
+	myscene_pic * scene_pic;
 
     explicit MyView(QWidget *parent = 0);  
 	~MyView( );  
@@ -29,16 +34,14 @@ protected:
 	void ReadAllSettings( );
 	QString getLocalIp();
 
-	myscene_main *scene_main;
-    myscene_num_call *scene_num_call;
-	myscene_video *scene_video;
-	myscene_list * scene_list;
-	myscene_pic * scene_pic;
+
 
 
 	void timerEvent( QTimerEvent *event );
 	int m_nTimerId;
+	int m_nTimerTalkId;
 	void gpio_init(  );
+	pthread_t pid_keyDetect;  
 
 	
 //    void keyPressEvent(QKeyEvent *event);  

@@ -45,6 +45,9 @@ class myscene_list : public QGraphicsScene
 	int max_page_num;
 	int call_id_index;
 
+	QLabel *label_listcall;
+    //QString str_numcall;
+
   
 };	
   

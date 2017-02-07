@@ -104,15 +104,21 @@
 
 
 //low lever to trig call
-#define LEFT_KEY  (4*32+20)  //CSI0_DATA_EN    5_20      left key
-#define RIGHT_KEY  (5*32+31)  //EIM_BCLK        6_31         right key
+#define GPO_LED_CALL     (4*32+20)     //CSI0_DATA_EN    5_20      
+#define GPO_LED_WARNING  (5*32+31)    //EIM_BCLK        6_31         
 
-#define LEFT_LED   (13)  //SD2_DATA2       1_13              left  led
-#define RIGHT_LED  (15)  //SD2_DATA0       1_15              right   led
+#define GPI_LEFT_KEY    (13)  //SD2_DATA2       1_13                     key2    pin42
+#define GPI_RIGHT_KEY   (15)  //SD2_DATA0       1_15                   key1    pin44
+
+#define GPO_SHORT_ALARM     (5*32+8)     //NANDF_ALE        6_8     
+#define GPI_SHORT_ALARM     (5*32+7)    //NANDF_CLE        6_7   
+
 
 #define GPIO_IN   0
 #define GPIO_OUT   1
 
+#define LED_ON      		0
+#define LED_OFF     		1
 
 
 #define TIME_DATE_FONTSIZE   20
@@ -128,6 +134,33 @@
 
 
 #define LIST_MAX_NUM  64
+
+
+
+typedef enum {
+    TS_IDLE = 0x0,
+    TS_TALK = 0x1, 		//这是固定的，ncs_cfg_t->call_type = 1;内通对讲，
+    TS_SIP_TALK = 0x2,	//SIP对讲
+    TS_MONITOR,
+    TS_BROADCAST,
+    TS_RING,
+    TS_PLAYIP,
+    TS_ALARM,
+    TS_BOARD_CHECK,
+    TS_SHORT_PLAY,
+    TS_REMOTE_PLAY,
+    TS_IN_TALK,
+    TS_INVALID,
+} talk_type_t;
+
+typedef enum {
+	 LED_OFFLINE = 0,
+	 LED_ONLINE = 1,
+	 LED_TALK = TS_IN_TALK,
+	 LED_RING = TS_RING,
+	 LED_BROADCAST = TS_BROADCAST,
+}  led_state_t;
+
 
 typedef struct {
 //[terminal]

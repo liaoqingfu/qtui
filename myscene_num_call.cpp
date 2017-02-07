@@ -164,7 +164,7 @@ void myscene_num_call::bt_numcallClicked( int buttonID)
             }
             else if ( buttonID == 13) {
                qDebug() << "call to" << str_numcall;
-			   if( pmv->scene_calling->startCall( str_numcall.toLatin1().data() ) > 0) {
+			   if( pmv->scene_calling->startCall( str_numcall.toLatin1().data() ,TS_SIP_TALK) > 0) {
 					pmv->changeWindowType( WINDOW_TYPE_CALLING); 
 					qDebug() << "CHANGE TO CALLING WINDOW" ;
 			   	}
