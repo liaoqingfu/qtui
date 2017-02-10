@@ -25,9 +25,9 @@ public:
     explicit myscene_calling(class MyView * pmv , QObject *parent = 0);
 	int 	startCall( char * dstId ,talk_type_t talk_type);   //char * sipServerIp, char * localId, 
 	void 	startCapture(  );
-	int 	answerCall(  );
 	int 	stopCall(  );
 	void 	inCall(  );
+	void 	volume_set(  );
 //   static  void * dec_callback(void *);
 //	static  void * capture_thread(void *);
 	void 	* 	h264_dec_ctx;  //h264_dec_Context*
@@ -40,18 +40,27 @@ public:
   	int  talkStartTime;
 	int    	video_init_error;//0: init success
 	int 	m_nTimeoutId;
+	int		m_nTimeAutoAnswer;
+	int 	m_auto_answer_count;
+    QPushButton *bt_hangup;
+	QPushButton *bt_answerCall;
 
-	
+	void  bAnswer_show(int bAnswerShow);
+	/*void emitSignalAutoAnswer() {  
+        signalAutoAnswer();  
+    }  */
 protected:	
 
   
   
 signals:  
-
+//	void signalAutoAnswer();
 
 
 public slots:
-	void  bt_stopCallClicked();
+	void 	bt_answerCallClicked(  );
+	void    bt_hangupClicked();
+//	void  start_autoAnser_timer();
 
 	
 //	void recv_slot();
@@ -65,7 +74,6 @@ private:
 	QLabel *label_time;
 	
 
-    QPushButton *bt_stopCall;
 	
 	QLabel *label_back;
 	QLabel *label_backCircle;

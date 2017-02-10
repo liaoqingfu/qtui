@@ -10,42 +10,17 @@ extern "C"  int _Z6xc9000v( );
 
 extern "C"  void pt( );
 
+#define LABEL_TIME_POS_X 180
+#define LABEL_TIME_POS_Y 400
+#define LABEL_DATE_POS_X 250
+#define LABEL_DATE_POS_Y 470
 
-/*
-void myscene_main::verifyTime()
-{
-    QNetworkRequest request(QUrl("http://open.baidu.com/special/time/"));
-    QNetworkReply *reply = manager.get(request);
-    connect(&manager, SIGNAL(finished(QNetworkReply*)), this, SLOT(verifyLocalTime(QNetworkReply*)));
-}
+#define LEFT_CALL_POS_X  900
+#define LEFT_CALL_POS_Y  300
+#define RIGHT_CALL_POS_X 900
+#define RIGHT_CALL_POS_Y 100
 
-bool myscene_main::verifyLocalTime(QNetworkReply *reply)
-{
-#if 1
-    QRegExp rx("window.baidu_time\\((.+)\\)");
-    do{
-        QString str = QString::fromUtf8(reply->readLine());
-        qDebug() << __FUNCTION__ << reply->readLine();
-        int pos = str.indexOf(rx);
-        if(pos >= 0)
-        {
-            QDateTime time = QDateTime::fromMSecsSinceEpoch(rx.cap(1).toLongLong());
-            if (time.isValid())
-            {
-                //bool bRet = Util::setSystemTime(time);
-				//system_cmd_exec
-				QString str= "date -s \"" + time.toString("yyyy-MM-dd hh:mm:ss") + "\"";
-    			system_cmd_exec(str.toLatin1().data());
-                qDebug() << "system_cmd_exec" << str.toLatin1().data();
-                return true;
-            }
-            break;
-        }
-    }while(!reply->atEnd());
-#endif
-    return false;
-}
-*/
+
 void  myscene_main::widget_init()
 {
 	qDebug() << "myscene_main widget_init"; 
@@ -53,16 +28,6 @@ void  myscene_main::widget_init()
 	//verifyTime();
 
     QGraphicsProxyWidget * proxy ;
-
-  /*  bt_stopCall = new QPushButton;
-
-    bt_stopCall->setGeometry( 970, 300, 50 , 80);
-	bt_stopCall->setText("STOP");
-    //bt_stopCall->setIcon( pixmap );
-    //bt_stopCall->setIconSize( QSize( pixmap.width() -15,pixmap.height() -15));
-    proxy = this->addWidget( bt_stopCall );
-    proxy->setRotation(-90);
-    connect( bt_stopCall ,SIGNAL(clicked( )), this, SLOT(bt_stopCallClicked( )));*/
 
 	label_back = new QLabel();
 	label_back->setAttribute(Qt::WA_TranslucentBackground); 
@@ -76,7 +41,7 @@ void  myscene_main::widget_init()
     label_time->setPalette(pe);
     label_time->setAttribute(Qt::WA_TranslucentBackground); 
     label_time->setFont( QFont(FONE_NAME, TIME_DATE_FONTSIZE*2) );
-    label_time->setGeometry(180,400,300,150);
+    label_time->setGeometry(LABEL_TIME_POS_X ,LABEL_TIME_POS_Y,300,150);
     proxy = this->addWidget(label_time);
     proxy->setRotation(-90);
 
@@ -86,7 +51,7 @@ void  myscene_main::widget_init()
 	label_date->setPalette(pe);
 	label_date->setAttribute(Qt::WA_TranslucentBackground); 
 	label_date->setFont( QFont(FONE_NAME, TIME_DATE_FONTSIZE*1.5) );
-	label_date->setGeometry(250,470,400,150);
+	label_date->setGeometry(LABEL_DATE_POS_X ,LABEL_DATE_POS_Y,400,150);
 	proxy = this->addWidget(label_date);
 	proxy->setRotation(-90);
 
@@ -94,20 +59,22 @@ void  myscene_main::widget_init()
 
     bt_leftCall = new QPushButton;
     pixmap.load( ":/pic/leftCall.bmp" );
-    bt_leftCall->setGeometry( 900, 300,pixmap.width() ,pixmap.height());
+    bt_leftCall->setGeometry( LEFT_CALL_POS_X,LEFT_CALL_POS_Y,pixmap.width() ,pixmap.height());
     bt_leftCall->setIcon( pixmap );
     bt_leftCall->setIconSize( QSize( pixmap.width() -15,pixmap.height() -15));
     this->addWidget( bt_leftCall );
 
 	bt_rightCall = new QPushButton;
     pixmap.load( ":/pic/rightCall.bmp" );
-    bt_rightCall->setGeometry( 900, 100,pixmap.width() ,pixmap.height());
+    bt_rightCall->setGeometry( RIGHT_CALL_POS_X,RIGHT_CALL_POS_Y,pixmap.width() ,pixmap.height());
     bt_rightCall->setIcon( pixmap );
     bt_rightCall->setIconSize( QSize( pixmap.width() -15,pixmap.height() -15));
     this->addWidget( bt_rightCall );
 	
 	connect( bt_leftCall ,SIGNAL(clicked( )), this, SLOT(bt_leftCallClicked( )));
 	connect( bt_rightCall ,SIGNAL(clicked( )), this, SLOT(bt_rightCallClicked( )));
+
+	changedWindowStyle( );
 
 	//m_nTimerId = startTimer(1000);  
    // timerEvent( new QTimerEvent(m_nTimerId) ) ;
@@ -143,6 +110,32 @@ myscene_main::myscene_main(MyView * pm,QObject *parent) :
     widget_init();
 
 }  
+
+void myscene_main::changedWindowStyle( )
+{  
+	switch(cfg.screen_button){
+		case 0:  //no call button
+			bt_leftCall->setVisible(false); 
+			bt_rightCall->setVisible(false); 
+			label_date->move(LABEL_DATE_POS_X + 50,LABEL_DATE_POS_Y);
+		break;
+		case 1:  //leftcall button
+			bt_leftCall->move (LEFT_CALL_POS_X,LEFT_CALL_POS_Y -100);
+			bt_leftCall->setVisible(true); 
+			bt_rightCall->setVisible(false); 
+			label_date->move(LABEL_DATE_POS_X ,LABEL_DATE_POS_Y);
+		break;
+		default:  //case 2:  //two call button
+			bt_leftCall->move (LEFT_CALL_POS_X,LEFT_CALL_POS_Y);
+			bt_rightCall->move(RIGHT_CALL_POS_X,RIGHT_CALL_POS_Y);
+			bt_leftCall->setVisible(true); 
+			bt_rightCall->setVisible(true); 
+			label_date->move(LABEL_DATE_POS_X ,LABEL_DATE_POS_Y);
+		break;
+	}
+}  
+
+	
 
 void myscene_main::mousePressEvent(QGraphicsSceneMouseEvent *event)  
 {  

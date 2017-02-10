@@ -10,16 +10,6 @@ void  myscene_pic::widget_init()
 
     QGraphicsProxyWidget * proxy ;
 
-  /*  bt_stopCall = new QPushButton;
-
-    bt_stopCall->setGeometry( 970, 300, 50 , 80);
-	bt_stopCall->setText("STOP");
-    //bt_stopCall->setIcon( pixmap );
-    //bt_stopCall->setIconSize( QSize( pixmap.width() -15,pixmap.height() -15));
-    proxy = this->addWidget( bt_stopCall );
-    proxy->setRotation(-90);
-    connect( bt_stopCall ,SIGNAL(clicked( )), this, SLOT(bt_stopCallClicked( )));*/
-
 	label_back = new QLabel();
 	label_back->setAttribute(Qt::WA_TranslucentBackground); 
     label_back->setPixmap(QPixmap(":/pic/main-other.bmp"));

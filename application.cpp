@@ -1,11 +1,12 @@
 #include "application.h"
 #include "video/main_api.h"
 #include "QDateTime"
+//#include "public.h"
 
 #define TIME_INTERVAL  50    //MS
 #define YDIS_INTERVAL  50    //PIX
 
-
+extern ncs_cfg_t cfg;
 Application::Application(int &argc, char **argv ):
     QApplication(argc,argv)
 {
@@ -21,6 +22,7 @@ bool Application::notify(QObject *obj, QEvent *e)
    static qint64 startTime = 0;//filter closely event
    static QPoint   pos, pos_dis;
    int wt = pview->WindowType;
+   static int video_halfscreen = cfg.display_halfScrenn;
    QMouseEvent *mouseEvent = (QMouseEvent *)e;
 
 	if( (e->type() == QEvent::MouseButtonPress) ) {
@@ -28,26 +30,26 @@ bool Application::notify(QObject *obj, QEvent *e)
 			pos = mouseEvent->globalPos();
 			//qDebug() << "P:" << pos.x() << pos.y();
 		}
-	 	else  if ( (wt <= WINDOW_TYPE_VIDEO_FUL)  ) //video :  half window ,  full window switch
+	 	else  if ( (wt <= WINDOW_TYPE_CALLING)  ) //video :  half window ,  full window switch
 	 	{
 	 		if( startTime == 0 )
 				startTime = QDateTime::currentMSecsSinceEpoch();
 			
 			if (QDateTime::currentMSecsSinceEpoch() - startTime > TIME_INTERVAL) {
 				startTime = QDateTime::currentMSecsSinceEpoch();
-
-				if( wt == WINDOW_TYPE_VIDEO_HALF)
+				if( !video_halfscreen  )
 				{
-					wt = WINDOW_TYPE_VIDEO_FUL;
 					ipu_para_set(1024, 600, 0 , 0, 0, 0, 4);
+					pview->scene_calling->bt_hangup->setVisible(false);
 					qDebug("**full screen*");
 				}
 				else {
 					//ipu_para_set(output_w, output_h, crop_x , crop_y, crop_w, crop_h, rotate);
-					wt = WINDOW_TYPE_VIDEO_HALF;
-					ipu_para_set(1024, 600, 100 , 0, 512, 600, 4);
+					ipu_para_set(512, 600, 100 , 0, 0, 0, 4);
+					pview->scene_calling->bt_hangup->setVisible(true);
 					qDebug("**half screen*");
 				}
+				video_halfscreen = !video_halfscreen;
 
 				pview->changeWindowType( wt );
 				

@@ -173,6 +173,9 @@ void myscene_num_call::bt_numcallClicked( int buttonID)
                
 			   pmv->changeWindowType( WINDOW_TYPE_MAIN) ; 
             }
+			 else if ( buttonID < NUM_CALL) {  //return to main window
+			   pmv->changeWindowType( buttonID - 14 ) ; 
+            }
 
             label_numcall->setText( str_numcall );
 

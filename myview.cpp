@@ -24,6 +24,8 @@ void MyView::gpio_init(  )
 	
 	gpio_open(GPO_LED_CALL ,    GPIO_OUT); 
 	gpio_open(GPO_LED_WARNING , GPIO_OUT);  
+	gpio_open(GPO_LOLR_SPK , GPIO_OUT);  
+	gpio_set( GPO_LOLR_SPK,	 LOLR_MUTE);
 	gpio_open(GPO_SHORT_ALARM , GPIO_OUT);  
 	gpio_set( GPO_SHORT_ALARM,	 cfg.short_o1_normal_mode);
 }
@@ -70,14 +72,51 @@ void led_display(int state)
 	}
 	++count;
 }
+/*
 
+void short_in_alarm()
+{
+	char				p_op_report[] = "report", p_op_reply[] = "reply";
+	char				*p_op_sel = p_op_report;
+
+	if (p_msg->param1 == 0) 								// ·À²ð
+		sprintf(p_alarm_no, "%d", 101);
+	else if (p_msg->param1 >= 1 && p_msg->param1 <= 0x7D)	// ±¨¾¯ÊäÈë¶Ë¿Ú
+		sprintf(p_alarm_no, "%d", p_msg->param1);
+	else if (p_msg->param1 == 0x7E) 						// Ðú»©
+		sprintf(p_alarm_no, "%d", 141);
+	else if (p_msg->param1 == 0x7F) 						// Ñ²¸ü
+		sprintf(p_alarm_no, "%d", 161);
+	else if (p_msg->param1 >= 0x81 && p_msg->param1 <= 0xFF)// ±¨¾¯Êä³ö¶Ë¿Ú
+	{
+		sprintf(p_alarm_no, "%d", p_msg->param1 - 0x81 + 501);
+		p_op_sel = p_op_reply;
+	}
+	if (p_msg->param2 == 0)
+		sprintf(p_status, "%d", 0);
+	else
+		sprintf(p_status, "%d", 1);
+
+	for (i = 0; i < SIP_UA_MESSAGE_TARGET_MAX && m_sip_ua.m_message_target[i] != 0; i++)
+	{
+		sprintf(p_id, "%d", m_sip_ua.m_message_target[i]);
+		m_sip_ua.send_msg_alarm_in(p_id, p_op_sel, p_alarm_no, p_status);
+	}
+
+}*/
 
 //key detect ,  led flash
 void * keyTrig_led_thread(void * pParam)
 {
 	static int talkStatus;
-	static int b_shortAlarm = 0;
+	static int b_shortAlarm = 0, short_i1_alarm_status_prev = gpio_get( GPI_SHORT_ALARM );
+	int 		short_i1_alarm_status_cur;
 	MyView * pMyView = ( MyView * )pParam;
+	char				p_alarm_no[5];
+	char				p_status[5];
+	char	p_op_report[] = "report";
+	char	p_id[ SIP_UA_USERNAME_LEN ];
+	int  leftKeyValue, rightKeyValue;
 	printf_log(LOG_IS_INFO, " Start keyDetect thread \n");
 	while(1)
 	{
@@ -92,18 +131,37 @@ void * keyTrig_led_thread(void * pParam)
 
 			#endif
 			//short In port detect
-			if( gpio_get( GPI_SHORT_ALARM ) != cfg.short_i1_alarm_mode )
+			short_i1_alarm_status_cur = gpio_get( GPI_SHORT_ALARM ) ? 1 : 0;
+			if( short_i1_alarm_status_cur != short_i1_alarm_status_prev )
 			{
-				if( !b_shortAlarm ) {
-					printf_log(LOG_IS_INFO, " 		---short alarm detected--   \n");
+				short_i1_alarm_status_prev = short_i1_alarm_status_cur;
+				int short_i1_value = cfg.short_i1_alarm_mode ? 1 : 0;
+				if( short_i1_value != short_i1_alarm_status_cur )
 					b_shortAlarm = 1;
+				else
+					b_shortAlarm = 0;
+				
+				for (int i = 0; i < SIP_UA_MESSAGE_TARGET_MAX && pMyView->scene_calling->sip_ua_1->m_message_target[i] != 0; i++)
+				{
+					sprintf(p_id, "%d", pMyView->scene_calling->sip_ua_1->m_message_target[i]);
+					sprintf(p_alarm_no, "%d", 1);
+					sprintf(p_status, "%d", b_shortAlarm);
+					pMyView->scene_calling->sip_ua_1->send_msg_alarm_in(p_id, p_op_report, p_alarm_no, p_status);  //p_alarm_no, p_status
 				}
-			}else
-				b_shortAlarm = 0;
+				printf_log(LOG_IS_INFO, "		---short alarm detected(%s)(%d,%d)--	\n", \
+					b_shortAlarm ? "trig" : "recover", cfg.short_i1_alarm_mode, short_i1_alarm_status_cur);
+			}
 			
 			led_display( sip_reg_success );   //sip_reg_success ? LED_ONLINE : LED_OFFLINE
 		}
 		else {
+			if( talkStatus == TS_INCOMING_TALK  || ((talkStatus == TS_TALKING) && cfg.accessing_talk_hangup )){
+				leftKeyValue = gpio_get( GPI_LEFT_KEY );
+				rightKeyValue = gpio_get( GPI_RIGHT_KEY ) ;
+				if( (leftKeyValue == 0) | (rightKeyValue == 0)){
+					talkStatus == TS_INCOMING_TALK ? pMyView->scene_calling->bt_answerCallClicked() : pMyView->scene_calling->bt_hangupClicked();
+				}
+			}
 			led_display( talkStatus );  
 		}
 		usleep( LED_SLEEP_TIME );
@@ -364,6 +422,7 @@ void MyView::ReadAllSettings( )
 	cfg.dns1 = settings.value( "terminal/dns1" ).toString();
 	cfg.dns2 = settings.value( "terminal/dns2" ).toString();
 	cfg.mac_addr = settings.value( "terminal/mac_addr" ).toString();
+	cfg.bDynamicIP = settings.value( "terminal/connection_type" ).toInt();
 
 	 cfg_netword_set(cfg.local_ip.toLatin1().data() ,cfg.netmask.toLatin1().data(),
 		cfg.gateway.toLatin1().data() ,cfg.dns1.toLatin1().data(),
@@ -390,7 +449,11 @@ void MyView::ReadAllSettings( )
 	cfg.mode_in= settings.value( "talk_cfg/mode_in" ).toInt();
 	cfg.mode_out= settings.value( "talk_cfg/mode_out" ).toInt();
 	cfg.talk_auto_answer= settings.value( "talk_cfg/talk_auto_answer" ).toInt();
-	cfg.accessing_talk_hangup= settings.value( "talk_cfg/accessing_talk_hangup" ).toInt();
+	cfg.talk_auto_answer_time = settings.value( "talk_cfg/talk_auto_answer_sec" ).toInt();
+	cfg.display_halfScrenn = settings.value( "talk_cfg/display_style" ).toInt();
+	
+		
+	cfg.accessing_talk_hangup = settings.value( "talk_cfg/accessing_talk_hangup" ).toInt();
 	cfg.echo= settings.value( "talk_cfg/echo" ).toInt();
 	cfg.environment= settings.value( "talk_cfg/environment" ).toInt();
 	cfg.display_target= settings.value( "talk_cfg/display_target" ).toInt();
@@ -411,6 +474,9 @@ void MyView::ReadAllSettings( )
 
 	cfg.screensaver_min= settings.value( "other_cfg/screensaver_min" ).toInt();
 	cfg.io_out_pass= settings.value( "other_cfg/io_out_pass" ).toInt();
+	cfg.screen_button= settings.value( "other_cfg/screen_button" ).toInt();
+	cfg.hdmi_style= settings.value( "other_cfg/hdmi_style" ).toInt();
+	
 
 	cfg.display_col= settings.value( "list_cfg/display_col" ).toInt();
 	for(i = 0; i < LIST_MAX_NUM; i++){

@@ -83,25 +83,27 @@ void  myscene_list::widget_init()
 	        ypos =  LIST_START_Y - (i%LIST_COLUMN) * LIST_HEIGHT;
 
 	        bt_listcall[i]->setGeometry( xpos, ypos, LIST_HEIGHT,LIST_WIDTH); 
+			bt_listcall[i]->setAttribute(Qt::WA_TranslucentBackground); 
+		
+			bt_listcall[i]->setStyleSheet("QPushButton{"  "border:3px solid white; text-align: left;}"); 
+			
+			bt_listcall[i]->setFont( QFont(FONE_NAME, TIME_DATE_FONTSIZE*1.5) );
 		}
 		else{
 			int j = i - LIST_COLUMN*LIST_ROW ;
-			xpos =  LIST_START_X + ((int)( i/LIST_COLUMN))*LIST_WIDTH;
+			xpos =  LIST_START_X + LIST_ROW*LIST_WIDTH + ((int)( j/3))*LIST_WIDTH;
 			ypos =  LIST_START_Y - (j % 3) * NUM_Y_HEIGHT;
 			bt_listcall[i]->setGeometry( xpos, ypos, NUM_Y_HEIGHT,LIST_WIDTH);
 			if( j < 3 )
 				bg_pic.sprintf(":/pic/list%i.bmp",j );
 			else
 				bg_pic.sprintf(":/pic/pic%i.bmp",j );
+			qDebug() << bg_pic;
 	        pixmap.load( bg_pic );
 			bt_listcall[i]->setIcon( pixmap );
 			bt_listcall[i]->setIconSize( QSize( NUM_Y_HEIGHT,LIST_WIDTH));
 		}
-        bt_listcall[i]->setAttribute(Qt::WA_TranslucentBackground); 
-		
-		bt_listcall[i]->setStyleSheet("QPushButton{"  "border:3px solid white; text-align: left;}"); 
-		
-		bt_listcall[i]->setFont( QFont(FONE_NAME, TIME_DATE_FONTSIZE*1.5) );
+        
 
         bg_listcall->addButton(bt_listcall[i],i);
         proxy = this->addWidget(bt_listcall[i]);
@@ -153,6 +155,9 @@ void myscene_list::bt_listcallClicked( int buttonID)
     else if ( buttonID == LIST_COLUMN*LIST_ROW + 2) //next page
     {
 	   set_list_content ( curr_page_num < max_page_num ? ++curr_page_num : curr_page_num ) ;
+    }
+	else if ( buttonID < LIST_COLUMN*LIST_ROW + 6) {  //return to main window
+	   pmv->changeWindowType( buttonID - LIST_COLUMN*LIST_ROW - 2 ) ; 
     }
            
 }

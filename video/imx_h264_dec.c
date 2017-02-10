@@ -289,7 +289,7 @@ int initial_info_callback(ImxVpuDecoder *decoder, ImxVpuDecInitialInfo *new_init
 #ifdef DECODE_DIRECT_TO_FB 
 	fb_out( FB_INIT );  //lhg direct output 
 #else
-	ipu_fb_init = rot_ipu_init(ctx->initial_info.frame_width,	ctx->initial_info.frame_height,ctx->initial_info.frame_width,	ctx->initial_info.frame_height);     //ipu rotate, then output
+	ipu_fb_init = rot_ipu_init(ctx->initial_info.frame_width,	ctx->initial_info.frame_height,512,600);     //ipu rotate, then output
 #endif
 	ctx->num_framebuffers = ctx->initial_info.min_num_required_framebuffers;
 

@@ -110,6 +110,12 @@
 #define GPI_LEFT_KEY    (13)  //SD2_DATA2       1_13                     key2    pin42
 #define GPI_RIGHT_KEY   (15)  //SD2_DATA0       1_15                   key1    pin44
 
+#define LOLR_UNMUTE   		1
+#define LOLR_MUTE   		0
+
+#define GPO_LOLR_SPK     (4*32 + 9)     //DISP0_DAT15     5_9  , LOL,LOR MUTE CONTROL ,  HIGH:OPEN
+
+
 #define GPO_SHORT_ALARM     (5*32+8)     //NANDF_ALE        6_8     
 #define GPI_SHORT_ALARM     (5*32+7)    //NANDF_CLE        6_7   
 
@@ -149,14 +155,15 @@ typedef enum {
     TS_BOARD_CHECK,
     TS_SHORT_PLAY,
     TS_REMOTE_PLAY,
-    TS_IN_TALK,
+    TS_INCOMING_TALK,
+    TS_TALKING,
     TS_INVALID,
 } talk_type_t;
 
 typedef enum {
 	 LED_OFFLINE = 0,
 	 LED_ONLINE = 1,
-	 LED_TALK = TS_IN_TALK,
+	 LED_TALK = TS_TALKING,
 	 LED_RING = TS_RING,
 	 LED_BROADCAST = TS_BROADCAST,
 }  led_state_t;
@@ -172,6 +179,7 @@ typedef struct {
 	QString dns1;
 	QString dns2;
 	QString mac_addr;
+	int   bDynamicIP;   //lhg not usable now
 	
 
 //[sip]
@@ -184,7 +192,7 @@ typedef struct {
 	int sip_video_rtp_port;
 	int sip_server_port;
 
-//[alone_cfg]
+//[alone_cfg]   
 	int   alone_enable;
 	QString ip_keyleft;
 	int port_keyleft;
@@ -197,13 +205,15 @@ typedef struct {
 	int volume_out;
 	int volume_ring;
 	int mode_in;
-	int mode_out;
+	int mode_out;  //对讲输出选择,0:扬声器输出、线路输出
 	int talk_auto_answer;
+	int talk_auto_answer_time;
 	
 	int accessing_talk_hangup;
 	int echo;
 	int environment;
 	int display_target;
+	int display_halfScrenn;
 	
 //	[broadcast_cfg]
 	int broadcast_volume_out;
@@ -224,6 +234,8 @@ typedef struct {
 //	[other_cfg]
 	int screensaver_min;
 	int io_out_pass;
+	int screen_button;
+	int hdmi_style;
 	
 //	[list_cfg]
 	int display_col;

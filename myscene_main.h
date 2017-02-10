@@ -37,6 +37,7 @@ private:
 //		void timerEvent( QTimerEvent *event );
 		int m_nTimerId;
 
+		void changedWindowStyle( );
 
 
         QPushButton *bt_leftCall;
