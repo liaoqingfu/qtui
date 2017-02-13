@@ -27,7 +27,7 @@
 
 #define SIP_UA_PORT_DEFAULT         5060
 #define SIP_RTP_AUDIO_PORT_DEFAULT  10000
-#define SIP_RTP_VIDEO_PORT_DEFAULT  30000       //lhg note: video port  shoulde > audio port
+#define SIP_RTP_VIDEO_PORT_DEFAULT  30000
 #define SIP_RTP_PORT_MIN			10000
 #define SIP_RTP_PORT_MAX			55000		// rtcp = rtp + 10000
 #define SIP_UA_VER                  "1.0"
@@ -58,6 +58,9 @@ typedef enum sip_task_type {
 	SIP_TASK_TYPE_MONITOR_INCOMING,
 } sip_task_type_t;
 
+typedef struct sip_channel {
+} sip_channel_t;
+
 class CTerminal;
 class CSipUA
 {
@@ -68,10 +71,10 @@ public:
 	friend class CTerminal;
 
 	// 初始化设置
-    void set_local_addr(const char *p_ip, WORD port);							// 设置本地ip和port
-    void set_register_addr(const char *p_ip, WORD port);						// 设置注册服务器ip和port
+    void set_local_addr(const char *p_ip, WORD port);							// 设置本地ip和port(sip协议地址和端口)
+    void set_register_addr(const char *p_ip, WORD port);						// 设置注册服务器ip(可以是域名)和port
     void set_username_password(const char *username, const char *password);		// 设置用户名和密码
-    void set_contact_addr(const char *p_ip, WORD port);							// 设置联系ip和port
+    void set_contact_addr(const char *p_ip, WORD port);							// 设置联系ip和port(用来控制服务器上显示的ip和port)
     BOOL register_server(void);													// 服务器注册
     BOOL unregister_server(void);												// 服务器注销
     BOOL init(void);															// 初始化
@@ -186,6 +189,7 @@ private:
 	int						m_audio_sample_rate;
 	WORD					m_rtp_video_port;
 	const char				*m_pmine_type_video;
+	char					m_profile_level_id[VIDEO_PROFILE_LEVEL_ID_LEN + 1];
 	int						m_payload_type_video;
 	int						m_remote_vport;
 	int						m_video_sample_rate;

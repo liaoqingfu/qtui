@@ -4,33 +4,22 @@
 # This make variable must be set before the demos or examples
 # can be built. 
 #
-CROSS_COMPILE:=/home/jack/Spon-Xserial/imx6/tools/arm-linux-cotex-a9-glibc/usr/bin/arm-linux-
-AS              = as
-LD              = ld
-CC              = gcc
-CPP             = $(CC) 
-AR              = ar
-NM              = nm
-STRIP           = strip
-OBJCOPY         = objcopy
-OBJDUMP         = objdump
+#CROSS_COMPILE:=/home/jack/Spon-Xserial/imx6/tools/arm-linux-cotex-a9-glibc/usr/bin/arm-linux-
+CROSS_COMPILE = 
+AS              = $(CROSS_COMPILE)as
+LD              = $(CROSS_COMPILE)ld
+CC              = $(CROSS_COMPILE)gcc
+CPP             = $(CROSS_COMPILE)g++ 
+AR              = $(CROSS_COMPILE)ar
+NM              = $(CROSS_COMPILE)nm
+STRIP           = $(CROSS_COMPILE)strip
+OBJCOPY         = $(CROSS_COMPILE)objcopy
+OBJDUMP         = $(CROSS_COMPILE)objdump
 RM              = rm -f
 MAKEDIR         = mkdir -p
 
-ARM_AS              = $(CROSS_COMPILE)as
-ARM_LD              = $(CROSS_COMPILE)ld
-ARM_CC              = $(CROSS_COMPILE)gcc
-ARM_CPP             = $(CC) 
-ARM_AR              = $(CROSS_COMPILE)ar
-ARM_NM              = $(CROSS_COMPILE)nm
-ARM_STRIP           = $(CROSS_COMPILE)strip
-ARM_OBJCOPY         = $(CROSS_COMPILE)objcopy
-ARM_OBJDUMP         = $(CROSS_COMPILE)objdump
-
-CFLAGS          += -Wall -g 
-CFLAGSO          = -fPIC -shared
-#LDFLAGS += -fPIC -shared
-LDFLAGS = cr
+#CFLAGS          += -Wall  -O2
+CFLAGS          += -Wall  -g
 AFLAGS         := -D__ASSEMBLY__
 
 

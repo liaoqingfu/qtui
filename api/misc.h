@@ -19,10 +19,11 @@
 
 typedef enum
 {
-	eIMAGE_CIF,
+	eIMAGE_none,
 	eIMAGE_VGA,
-	eIMAGE_D1,
+	eIMAGE_CIF,
 	eIMAGE_720P,
+	eIMAGE_D1,	
 	eIMAGE_SVGA,
 	eIMAGE_QVGA,
 }E_IMAGE_RESOL;

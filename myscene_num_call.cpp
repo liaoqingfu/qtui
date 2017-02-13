@@ -3,7 +3,7 @@
 #include "video/main_api.h"
 #include "myview.h" 
 
-
+extern ncs_cfg_t cfg;
 
 QString  call_num_seq[13] = {"1","2","3","4","5","6","7","8","9","*","0","#","<"};
 
@@ -15,6 +15,7 @@ QString  call_num_seq[13] = {"1","2","3","4","5","6","7","8","9","*","0","#","<"
 #define LOCAL_PORT  60013
 
 #define QT_CALL_API  0
+extern float g_fontResize;
 
 
 class videoRead : public QThread
@@ -37,7 +38,7 @@ void  myscene_num_call::widget_init()
 {
 	QGraphicsProxyWidget * proxy ;
 	qDebug() << "widget_init"; 
-
+	OpenDoorSec= 0;
 	udpSocket = new QUdpSocket;
 	udpSocket->bind(QHostAddress::LocalHost,LOCAL_PORT);
 	qDebug() << QHostAddress::LocalHost;
@@ -55,7 +56,7 @@ void  myscene_num_call::widget_init()
 	pe.setColor(QPalette::ButtonText, Qt::white);   
     label_time->setPalette(pe);
     label_time->setAttribute(Qt::WA_TranslucentBackground); 
-    label_time->setFont( QFont(FONE_NAME, TIME_DATE_FONTSIZE) );
+    label_time->setFont( QFont(FONE_NAME, TIME_DATE_FONTSIZE * g_fontResize) );
     label_time->setGeometry(TIME_POSX,TIME_POSY,TIME_POSW,TIME_POSH);
     proxy = this->addWidget(label_time);
     proxy->setRotation(-90);
@@ -65,7 +66,7 @@ void  myscene_num_call::widget_init()
 	//pe.setColor(QPalette::WindowText,Qt::white);
 	label_date->setPalette(pe);
 	label_date->setAttribute(Qt::WA_TranslucentBackground); 
-	label_date->setFont( QFont(FONE_NAME, TIME_DATE_FONTSIZE) );
+	label_date->setFont( QFont(FONE_NAME, TIME_DATE_FONTSIZE * g_fontResize) );
 	label_date->setGeometry(DATE_POSX,DATE_POSY,DATE_POSW,DATE_POSH);
 	proxy = this->addWidget(label_date);
 	proxy->setRotation(-90);
@@ -81,7 +82,7 @@ void  myscene_num_call::widget_init()
     label_bottom_status = new QLabel();
     label_bottom_status->setPalette(pe);
     label_bottom_status->setAttribute(Qt::WA_TranslucentBackground);
-    label_bottom_status->setFont( QFont(FONE_NAME, TIME_DATE_FONTSIZE) );
+    label_bottom_status->setFont( QFont(FONE_NAME, TIME_DATE_FONTSIZE * g_fontResize) );
     label_bottom_status->setGeometry(SCREEN_WID-60,560,560,50);
     proxy = this->addWidget(label_bottom_status);
     proxy->setRotation(-90);
@@ -90,7 +91,7 @@ void  myscene_num_call::widget_init()
     label_numcall = new QLabel();
 	label_numcall->setPalette(pe);
     label_numcall->setAttribute(Qt::WA_TranslucentBackground);
-    label_numcall->setFont( QFont(FONE_NAME, TIME_DATE_FONTSIZE*2) );
+    label_numcall->setFont( QFont(FONE_NAME, TIME_DATE_FONTSIZE * (1 + g_fontResize) ) );
     label_numcall->setGeometry(80,530,400,120);
     proxy = this->addWidget(label_numcall);
     proxy->setRotation(-90);
@@ -110,7 +111,7 @@ void  myscene_num_call::widget_init()
         bt_numcall[i]->setAttribute(Qt::WA_TranslucentBackground); 
         if( i < 12){
 			bt_numcall[i]->setStyleSheet("QPushButton{" "border:3px solid white;}");  //宽度为3px的红色边框
-			bt_numcall[i]->setFont( QFont(FONE_NAME, TIME_DATE_FONTSIZE*1.5) );
+			bt_numcall[i]->setFont( QFont(FONE_NAME, TIME_DATE_FONTSIZE*(0.5 + g_fontResize)) );
 			bt_numcall[i]->setPalette(pe);
 			bt_numcall[i]->setText(  call_num_seq[i]  );
         }
@@ -144,9 +145,16 @@ void myscene_num_call::bt_numcallClicked( int buttonID)
             int num_len = str_numcall.length();
 
             if ( buttonID < 12) {
-                if (num_len < MAX_NUM_LEN ){
+				if ( buttonID == 11) { //# open door
+					if( str_numcall == cfg.io_out_pass ){
+						gpio_set( GPO_SHORT_ALARM,	 !cfg.short_o1_normal_mode );
+						OpenDoorSec = QDateTime::currentMSecsSinceEpoch()/1000;
+						printf_log(LOG_IS_INFO, " 		---short alarm out :open door--   \n");
+					}
+					str_numcall = "";
+				}					
+                else if (num_len < MAX_NUM_LEN ){
                     str_numcall = str_numcall + call_num_seq[buttonID];
-
                 }
                 else{
                     label_bottom_status->setText( "Warning: reach max length!" );

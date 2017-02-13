@@ -6,6 +6,10 @@
 #define TIME_INTERVAL  50    //MS
 #define YDIS_INTERVAL  50    //PIX
 
+#define DBCLK_INTERVAL  10    //MS
+
+
+
 extern ncs_cfg_t cfg;
 Application::Application(int &argc, char **argv ):
     QApplication(argc,argv)
@@ -26,6 +30,10 @@ bool Application::notify(QObject *obj, QEvent *e)
    QMouseEvent *mouseEvent = (QMouseEvent *)e;
 
 	if( (e->type() == QEvent::MouseButtonPress) ) {
+		if( pview->b_screenSaver )  //»½ÐÑ
+			pview->setScreenSaver(0);
+		pview->screenSaverStartTime = QDateTime::currentMSecsSinceEpoch();
+		
 		if ( (wt < WINDOW_TYPE_VIDEO_HALF)  ){
 			pos = mouseEvent->globalPos();
 			//qDebug() << "P:" << pos.x() << pos.y();
@@ -35,24 +43,23 @@ bool Application::notify(QObject *obj, QEvent *e)
 	 		if( startTime == 0 )
 				startTime = QDateTime::currentMSecsSinceEpoch();
 			
-			if (QDateTime::currentMSecsSinceEpoch() - startTime > TIME_INTERVAL) {
+			if (QDateTime::currentMSecsSinceEpoch() - startTime < DBCLK_INTERVAL) {   
 				startTime = QDateTime::currentMSecsSinceEpoch();
 				if( !video_halfscreen  )
 				{
 					ipu_para_set(1024, 600, 0 , 0, 0, 0, 4);
 					pview->scene_calling->bt_hangup->setVisible(false);
+					pview->scene_calling->bt_hangup->update();
 					qDebug("**full screen*");
 				}
 				else {
 					//ipu_para_set(output_w, output_h, crop_x , crop_y, crop_w, crop_h, rotate);
 					ipu_para_set(512, 600, 100 , 0, 0, 0, 4);
 					pview->scene_calling->bt_hangup->setVisible(true);
+					pview->scene_calling->bt_hangup->update();
 					qDebug("**half screen*");
 				}
 				video_halfscreen = !video_halfscreen;
-
-				pview->changeWindowType( wt );
-				
 			}
 	 	}
 	}

@@ -16,6 +16,9 @@
 #include "ortp/ortp.h"
 #include "ortp/stun_udp.h"
 #include "portaudio/portaudio.h"
+#include "libspeex/config.h"
+#include "libspeex/speex_echo.h"
+#include "libspeex/speex_preprocess.h"
 
 #include "AudioFile.h"
 #include "LIST.H"
@@ -41,6 +44,11 @@ extern char g_mime_type_mp3[];
 #define SAMPLES_PER_FRAME_MAX		(SAMPLE_RATE_MAX * (MAX_MS_PER_FRAME) / 1000)	// 每帧最大采样数
 #define RTP_AUDIO_LEN_MAX			(SAMPLES_PER_FRAME_MAX)
 
+#define AEC_FRAME_LEN_8K			128
+#define AEC_FRAME_LEN_16K			256
+#define AEC_FILTER_LEN_8K			512
+#define AEC_FILTER_LEN_16K			1024
+
 #define AUDIO_RECORD_FOLDER_NAME	"record"
 
 typedef struct rtp_connect_param {
@@ -54,6 +62,7 @@ typedef struct rtp_connect_param {
 	BOOL			enable_rtp_send;
 	BOOL			enable_rtp_recv;
 	BOOL			enable_memory_fill_send;	// 选择AUDIO_SRC_MEMORY时, 填充传送数据(freeswitch的rtp中,要想接收数据,必须要发送数据)
+	BOOL			use_aec;					// 是否使用回声抵消
 	int				mseconds_per_packet;
 	BOOL			b_rtp_buf_max;				// 使用最大缓冲
 	int				rtp_buf_ms;					// 使用指定时长的缓冲(用于调节延时)
@@ -77,6 +86,7 @@ public:
 	void set_enable_record(BOOL enable);												// 是否录音(默认录音)
 	void set_enable_mp3decoder_when_memory(BOOL enable);								// 设置当选择AUDIO_SRC_MEMORY时,是否需要解码
 	BOOL get_enable_mp3decoder_when_memory(void);										// 获取当选择AUDIO_SRC_MEMORY时,是否需要解码
+	void set_enable_echo_cancel(BOOL enable);											// 是否使用回声抵消(默认不使用)
 
 	// 以下函数仅限于父类调用
 	void write_rtp_senddata(const short *p_send, int samples);							// 添加rtp待传送数据(samples:采样个数)
@@ -100,6 +110,8 @@ private:
 	void close_record_file(void);														// 关闭录音文件
 	void create_record_file(const char *p_user_name, const char *p_callee_name);		// 创建录音文件
 	void set_recvdata_callback(void(*p_callback)(void *), void *p_param);				// 设置音频接收数据回调处理(主循环实时性不好)
+	void create_echo_canceller(void);													// 创建回声抵消器
+	void destroy_echo_canceller(void);													// 销毁回声抵消器
 
 	// 静态函数
 #ifdef WIN32
@@ -171,6 +183,17 @@ private:
 	DWORD					m_mp3encode_samples;				// mp3编码的输入采样数量
 	DWORD					m_mp3encode_out_size;				// mp3编码的输出缓冲大小
 	timer_data_t			m_tdata_mp3decode_samplerate;		// mp3编码采样率改变
+
+	// 回声抵消
+	BOOL					m_enable_echo_cancel;				// 是否启用回声抵消(默认不启用)
+	BOOL					m_use_aec;							// 是否使用回声抵消(只有对讲时使用)
+	int						m_aec_frame_len;					// 回声抵消帧长
+	short					*m_paec_ref_buf;					// 参考信号
+	int						m_aec_ref_len;
+	short					*m_paec_mic_buf;					// 输出信号(回声抵消后的信号)
+	int						m_aec_mic_len;
+	SpeexEchoState			*m_pecho_st;
+	SpeexPreprocessState	*m_ppreprocess_st;
 };
 
 // 设置当选择AUDIO_SRC_MEMORY时,是否需要解码
@@ -208,6 +231,12 @@ inline void CAudioStream::set_enable_record(BOOL enable)
 inline void CAudioStream::set_mp3encode_bitrate(int bitrate)
 {
 	m_mp3encode_bitrate = bitrate;
+}
+
+// 是否使用回声抵消(默认不使用)
+inline void CAudioStream::set_enable_echo_cancel(BOOL enable)
+{
+	m_enable_echo_cancel = enable;
 }
 
 #endif // __AUDIO_STREAM_H__

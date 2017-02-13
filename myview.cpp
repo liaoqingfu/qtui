@@ -5,6 +5,8 @@
 
 #define HARD_KEY_TRIG  1
 
+#define  CLOSE_DOOR_INTERVAL   10  //SECOND
+
 #define  LED_SLEEP_TIME		(1000*200)
 
 #define  LED_BLINK_FAST		((1000*200) / LED_SLEEP_TIME)
@@ -13,6 +15,7 @@
 
 ncs_cfg_t cfg;
 extern int 	sip_reg_success;
+float g_fontResize;
 
 //cfg.short_i1_alarm_mode     cfg.short_o1_normal_mode
 
@@ -123,11 +126,17 @@ void * keyTrig_led_thread(void * pParam)
 		talkStatus = pMyView->scene_calling->SipTalkType;
 		if( talkStatus == TS_IDLE ) {
 			#if  HARD_KEY_TRIG
-			if( gpio_get( GPI_LEFT_KEY ) == 0)
+			if( gpio_get( GPI_LEFT_KEY ) == 0) {
+				if( pMyView->b_screenSaver )  //»½ÐÑ
+					pMyView->setScreenSaver(0);
 				pMyView->scene_main->bt_leftCallClicked();
+			}
 
-			if( gpio_get( GPI_RIGHT_KEY ) == 0)
+			if( gpio_get( GPI_RIGHT_KEY ) == 0){
+				if( pMyView->b_screenSaver )  //»½ÐÑ
+					pMyView->setScreenSaver(0);
 				pMyView->scene_main->bt_rightCallClicked();
+			}
 
 			#endif
 			//short In port detect
@@ -176,10 +185,99 @@ MyView::~MyView( )
 
 }
 
+#define WEB_CONFIG_PIPE 					"web_cfg_pipe"
+
+pthread_t pid_config_monitor;
+#define NCS_WEB_CFG_RELOAD	0
+#define NCS_WEB_CFG_REBOOT	1
+#define NCS_WEB_CFG_FACTORY	2
+#define NCS_WEB_CFG_LAST	3
+
+void * web_config_modify_monitor(void * pParam)
+{
+	uint8_t buf[128];
+	ortp_pipe_t client = ORTP_PIPE_INVALID;
+	ortp_pipe_t pipe = ortp_server_pipe_create(WEB_CONFIG_PIPE);
+	if (pipe == ORTP_PIPE_INVALID) {
+		printf("	WEB_CONFIG_PIPE create failed:%s\n", strerror(errno));
+		return NULL;
+	}
+	MyView * pMyView = ( MyView * )pParam;
+
+	while (1) {
+		fd_set rset;
+		int result;
+		int maxfd = pipe;
+
+		FD_ZERO(&rset);
+		FD_SET(pipe, &rset);
+
+		if (client != ORTP_PIPE_INVALID) {
+			FD_SET(client, &rset);
+			maxfd = maxfd > client ? maxfd : client;
+		}
+
+		result = select(maxfd + 1, &rset, NULL, NULL, NULL);
+		if (result > 0) {
+			if (FD_ISSET(pipe, &rset)) {
+				client = ortp_server_pipe_accept_client(pipe);
+				if (client == ORTP_PIPE_INVALID) {
+					printf("	accept web config client failed:%s\n", strerror(errno));
+					continue;
+				}
+			}
+
+			if (client != ORTP_PIPE_INVALID) {
+				if (FD_ISSET(client, &rset)) {
+					result = ortp_pipe_read(client, buf, 128);
+					if (result == 0) {
+						client = ORTP_PIPE_INVALID;
+						printf("	web config client closed\n");
+						continue;
+					}
+
+					if (result == 1 ) {
+						switch (buf[0]) {
+							case NCS_WEB_CFG_RELOAD:
+								printf("	NCS_WEB_CFG_RELOAD\n");
+								pMyView->ReadAllSettings( );
+							break;
+							case NCS_WEB_CFG_REBOOT:
+								printf("	NCS_WEB_CFG_REBOOT\n");
+								//system_cmd_exec("reboot");
+							break; 
+							case NCS_WEB_CFG_FACTORY:
+								printf("	ncs_cfg_factory_reload()\n");
+							break;
+							case NCS_WEB_CFG_LAST:
+								printf("	ncs_cfg_last_reload()");
+							break;
+						}
+					}
+				}
+			}
+		}
+	}
+}
+void MyView::setScreenSaver( int bset)
+{
+	b_screenSaver = bset;
+	if( bset )
+		system_cmd_exec("echo 1 >> /sys/class/graphics/fb0/blank" );
+	else
+		system_cmd_exec("echo 0 >> /sys/class/graphics/fb0/blank" );
+}
+
+
 MyView::MyView(QWidget *parent) :  
 	QGraphicsView(parent)  
 {  
+	screenSaverStartTime = QDateTime::currentMSecsSinceEpoch();
+	
+	setScreenSaver(0);
 	ReadAllSettings( );
+	if (pthread_create(&pid_config_monitor, NULL, web_config_modify_monitor, this) < 0)
+		printf("sequence_execute  create error:%s\n", strerror(errno));
 
     WindowType = WINDOW_TYPE_MAIN;
 
@@ -216,6 +314,7 @@ void MyView::timerEvent( QTimerEvent *event )
 	QTime qtimeObj = QTime::currentTime();
 	static int minute = -1;
 	static int netStatusChanged = -1;
+	qint64 curTime,idleTime;
  {
 		QString str;
 		str.sprintf("%02d:%02d",qtimeObj.hour(),qtimeObj.minute() ); 
@@ -226,7 +325,22 @@ void MyView::timerEvent( QTimerEvent *event )
 			scene_list->label_net_status->setPixmap( sip_reg_success ? QPixmap(":/pic/online.bmp") : QPixmap(":/pic/offline.bmp") );
 			scene_pic->label_net_status->setPixmap( sip_reg_success ? QPixmap(":/pic/online.bmp") : QPixmap(":/pic/offline.bmp") );
 		}
-			
+		curTime = QDateTime::currentMSecsSinceEpoch();
+		idleTime = (curTime - screenSaverStartTime)/1000;
+		if( (scene_calling->SipTalkType != TS_IDLE) &&  (idleTime > cfg.screensaver_sec) ){ //screen saver
+			setScreenSaver(1);
+		}else if( idleTime % (60) == 0 ) { // second
+			setScreenSaver(0);
+		}
+
+		if( scene_num_call->OpenDoorSec != 0){
+			if(curTime /1000 - scene_num_call->OpenDoorSec > CLOSE_DOOR_INTERVAL){
+				gpio_set( GPO_SHORT_ALARM,	 cfg.short_o1_normal_mode );
+				scene_num_call->OpenDoorSec = 0;
+				printf_log(LOG_IS_INFO, " 		---short alarm out :close door--   \n");
+			}
+		}
+		
 		if( (minute != -1) )
 		{
 			switch ( WindowType )
@@ -275,26 +389,26 @@ void MyView::changeWindowType( int winType )
 		switch ( winType )
 		{
 			case WINDOW_TYPE_MAIN:	
+				topWindowType = winType;
 				this->setScene(scene_main);
 				break;
 				
 			case WINDOW_TYPE_CALLING:	
-				topWindowType = WindowType;
 				this->setScene(scene_calling);
 				break;
 			case WINDOW_TYPE_NUM_CALL:	
-				topWindowType = WINDOW_TYPE_MAIN;
+				topWindowType = winType;
 				this->setScene(scene_num_call);
 				break;
 			case WINDOW_TYPE_LIST_CALL:  
-				topWindowType = WINDOW_TYPE_MAIN;
+				topWindowType = winType;
 				this->setScene(scene_list);
 				break;
 			case WINDOW_TYPE_PIC_CALL:
-				topWindowType = WINDOW_TYPE_MAIN;
+				topWindowType = winType;
 				this->setScene(scene_pic);
 				break;
-			case WINDOW_TYPE_VIDEO_HALF: 
+			/*case WINDOW_TYPE_VIDEO_HALF: 
 				if( WindowType < WINDOW_TYPE_VIDEO_HALF )
 					topWindowType = WindowType;
 				this->setScene(scene_video);
@@ -304,14 +418,14 @@ void MyView::changeWindowType( int winType )
 					topWindowType = WindowType;
 				this->setScene(scene_video);
 				scene_video->startVideo();
-				break;
+				break;*/
 			default:
 				qDebug() << "<error : unknown WindowType>";
 				return ;
 		}
 	}
+	qDebug() << "		<origW:>" << WindowType << "<desW:>" <<winType;
 	WindowType = winType;
-	qDebug() << "		<topW:>" << topWindowType << "<desW:>" <<winType;
 }
 /*
 
@@ -373,33 +487,53 @@ void MyView::WriteSettings(QString sector, QString sItem,int value)
 	settings.endGroup();
 	*/
 }
+/*
+auto lo
+iface lo inet loopback
 
+# The primary network interface
+auto eth0
+iface eth0 inet static
+address 192.168.1.42
+network 192.168.1.0
+netmask 255.255.255.0
+broadcast 192.168.1.255
+gateway 192.168.1.1
 
-QString MyView::getLocalIp()
-{
+*/
 
-QList<QHostAddress> list = QNetworkInterface::allAddresses();  
-    foreach (QHostAddress address, list)  
-    {  
-        if(address.protocol() == QAbstractSocket::IPv4Protocol)  
-        {  
-            if (address.toString().contains("127.0."))  
-            {  
-                continue;  
-            }  
-           return address.toString();  
-        }  
-    }  
-
-}
 void  cfg_netword_set(char* ip ,char* netmask,char* gw,char* dns1,char* dns2,char* mac_addr)
 {
 	
     system_cmd_exec("rm -f /etc/resolv.conf");
-    if (dns1) system_cmd_exec("echo nameserver %s > /etc/resolv.conf", dns1);
-    if (dns2) system_cmd_exec("echo nameserver %s > /etc/resolv.conf", dns2);
-    if (mac_addr) system_cmd_exec("ifconfig eth0 hw ether %s", mac_addr);
-    if (ip && netmask) system_cmd_exec("ifconfig eth0 %s netmask %s up", ip, netmask);
+    if (dns1) system_cmd_exec("echo nameserver %s >> /etc/resolv.conf", dns1);
+    if (dns2) system_cmd_exec("echo nameserver %s >> /etc/resolv.conf", dns2);
+
+
+	system_cmd_exec("echo auto lo > /etc/network/interfaces");
+	system_cmd_exec("echo iface lo inet loopback >> /etc/network/interfaces");
+
+	system_cmd_exec("echo auto eth0 >> /etc/network/interfaces");
+	if( cfg.bDynamicIP ){
+		system_cmd_exec("echo iface eth0 inet dhcp >> /etc/network/interfaces");
+		
+	}	
+	else{  //static ip
+		if (mac_addr) system_cmd_exec("ifconfig eth0 hw ether %s", mac_addr);
+    	if (ip && netmask) system_cmd_exec("ifconfig eth0 %s netmask %s up", ip, netmask);
+		
+		system_cmd_exec("echo iface eth0 inet static >> /etc/network/interfaces");
+		if (ip)
+			system_cmd_exec("echo address %s>> /etc/network/interfaces",ip);
+		if (netmask)
+			system_cmd_exec("echo netmask %s>> /etc/network/interfaces",netmask);
+	}
+	if (gw)
+		system_cmd_exec("echo gateway %s>> /etc/network/interfaces",gw);
+	if (mac_addr)
+		system_cmd_exec("echo hwaddress ether %s>> /etc/network/interfaces",mac_addr);
+
+	
 	if (gw) system_cmd_exec("route add default gw %s", gw);
 }
 
@@ -409,7 +543,6 @@ void  mac_addr_get(char* ip,char* mac_addr)
     sprintf(mac_addr, "%02x:%02x:%02x:%02x:%02x:%02x", 00, 0x89, (ip_addr >> 24 & 0xff),
         (ip_addr >> 16 & 0xff), (ip_addr >> 8 & 0xff), (ip_addr & 0xff));
 }
-
 void MyView::ReadAllSettings( )
 {
 	int i = 0;
@@ -472,11 +605,22 @@ void MyView::ReadAllSettings( )
 	cfg.noise_alarm_vol= settings.value( "short_cfg/noise_alarm_vol" ).toInt();
 	cfg.noise_alarm_time= settings.value( "short_cfg/noise_alarm_time" ).toInt();
 
-	cfg.screensaver_min= settings.value( "other_cfg/screensaver_min" ).toInt();
-	cfg.io_out_pass= settings.value( "other_cfg/io_out_pass" ).toInt();
+	cfg.screensaver_sec= settings.value( "other_cfg/screensaver_min" ).toInt() * 60  ; //minute ---> sec
+	cfg.io_out_pass= settings.value( "other_cfg/io_out_pass" ).toString();
 	cfg.screen_button= settings.value( "other_cfg/screen_button" ).toInt();
 	cfg.hdmi_style= settings.value( "other_cfg/hdmi_style" ).toInt();
-	
+	cfg.font_size= settings.value( "other_cfg/font_size" ).toInt();
+	switch(cfg.font_size){
+		case 1:
+			g_fontResize = 0.5;
+			break;
+		case 2:
+			g_fontResize = 1;
+			break;
+		default:  //case 3:
+			g_fontResize = 1.5;
+			break;
+	}
 
 	cfg.display_col= settings.value( "list_cfg/display_col" ).toInt();
 	for(i = 0; i < LIST_MAX_NUM; i++){

@@ -22,12 +22,6 @@
 #include <sys/stat.h>
 #endif
 
-typedef short __int16;
-typedef unsigned short spx_uint16_t;
-typedef int spx_int32_t;
-typedef unsigned int spx_uint32_t;
-
-
 #define TIMER_SIVAL_AUDIO			2000
 #define TIMER_MP3DECODE_SAMPLERATE	2001
 
@@ -113,7 +107,6 @@ BOOL			CAudioStream::m_timer_rtp_data = FALSE;
 CAudioStream::CAudioStream()
 {
 	char	p_strerr[PATH_MAX] = {0};
-	int		talk_sample_rate = 8000;
 
 	m_audio_src = AUDIO_SRC_FILE;
 	m_audio_format = AUDIO_FORMAT_PCMU;
@@ -158,15 +151,6 @@ CAudioStream::CAudioStream()
 	m_record = FALSE;
 	m_file_arx = NULL;
 	m_file_atx = NULL;
-
-	// 回声抵消
-	m_enable_echo_cancel = FALSE;
-	m_use_aec = FALSE;
-	m_aec_frame_len = 0;
-	m_paec_ref_buf = m_paec_mic_buf = NULL;
-	m_aec_ref_len = m_aec_mic_len = 0;
-	m_pecho_st = NULL;
-	m_ppreprocess_st = NULL;
 
 	initNetwork();
 
@@ -249,7 +233,6 @@ CAudioStream::~CAudioStream()
 	}
 	ortp_exit();
 	close_record_file();
-	destroy_echo_canceller();
 }
 
 // 初始化
@@ -466,45 +449,18 @@ int CAudioStream::audio_callback(const void *p_input, void *p_output,
 // 添加rtp待传送数据(send_len:采样个数)
 void CAudioStream::write_rtp_senddata(const short *p_send, int samples)
 {
-	int			i, j;
-	short		*p_out_buf = NULL;
+	int			i;
 
-	if (m_enable_echo_cancel && m_use_aec)
+	ua_mutex_lock(&m_mutex_rtp_buf);
+	for (i = 0; i < samples; i++)
 	{
-		p_out_buf = (short *)ua_malloc(m_aec_frame_len * sizeof (short));
-		for (i = 0; i < samples; i++)
-		{
-			m_paec_mic_buf[m_aec_mic_len++] = p_send[i];
-			if (m_aec_mic_len >= m_aec_frame_len)
-			{
-				speex_echo_capture(m_pecho_st, (__int16  *)m_paec_mic_buf, (__int16  *)p_out_buf);
-				speex_preprocess_run(m_ppreprocess_st, (__int16  *)p_out_buf);
-				ua_mutex_lock(&m_mutex_rtp_buf);
-				for (j = 0; j < m_aec_mic_len; j++)
-				{
-					m_rtp_buf_atx[m_rtp_write_atx++] = p_out_buf[j];
-					if (m_rtp_write_atx >= m_rtp_buf_max)
-						m_rtp_write_atx = 0;
-				}
-				ua_mutex_unlock(&m_mutex_rtp_buf);
-				m_aec_mic_len = 0;
-			}
-		}
+		m_rtp_buf_atx[m_rtp_write_atx++] = p_send[i];
+		if (m_rtp_write_atx >= m_rtp_buf_max)
+			m_rtp_write_atx = 0;
 	}
-	else
-	{
-		ua_mutex_lock(&m_mutex_rtp_buf);
-		for (i = 0; i < samples; i++)
-		{
-			m_rtp_buf_atx[m_rtp_write_atx++] = p_send[i];
-			if (m_rtp_write_atx >= m_rtp_buf_max)
-				m_rtp_write_atx = 0;
-		}
-		ua_mutex_unlock(&m_mutex_rtp_buf);
-	}
-
-	if (p_out_buf != NULL)
-		ua_free(p_out_buf);
+	ua_mutex_unlock(&m_mutex_rtp_buf);
+	//if (m_file_atx != NULL)
+	//	fwrite(p_send, 1, samples * sizeof (short), m_file_atx);
 }
 
 // 获取rtp已接收数据(recv_len:采样个数),返回采样个数
@@ -527,21 +483,9 @@ int CAudioStream::read_rtp_recvdata(short *p_recv, int samples)
 				m_rtp_read_arx = 0;
 		}
 		ua_mutex_unlock(&m_mutex_rtp_buf);
-		if (m_enable_echo_cancel && m_use_aec)
-		{
-			for (i = 0; i < samples; i++)
-			{
-				m_paec_ref_buf[m_aec_ref_len++] = p_recv[i];
-				if (m_aec_ref_len >= m_aec_frame_len)
-				{
-					speex_echo_playback(m_pecho_st, (__int16  *)m_paec_ref_buf);
-					m_aec_ref_len = 0;
-				}
-			}
-		}
 		read = samples;
 		if (m_file_arx != NULL)
-			fwrite(p_recv, 1, read * sizeof (short), m_file_arx);
+			fwrite(p_recv, 1, samples * sizeof (short), m_file_arx);
 	}
 
 	return read;
@@ -904,7 +848,6 @@ BOOL CAudioStream::rtp_connect(rtp_connect_param_t *p_param)
 	try
 	{
 		rtp_unconnect();
-		destroy_echo_canceller();
 		if (p_param == NULL || p_param->p_local_ip == NULL || p_param->p_remote_ip == NULL || p_param->p_mime_type == NULL)
 		{
 			sprintf(p_strerr, "[CAudioStream::rtp_connect()] : parameter invalid\n");
@@ -1066,8 +1009,6 @@ BOOL CAudioStream::rtp_connect(rtp_connect_param_t *p_param)
 
 		if (m_record)
 			create_record_file(p_param->p_user_name, p_param->p_callee_name);
-		if (m_enable_echo_cancel && p_param->use_aec)
-			create_echo_canceller();
 
 		if (m_enable_sound_card)
 			open_soundcard(m_sample_rate);
@@ -1350,57 +1291,5 @@ void CAudioStream::set_recvdata_callback(void(*p_callback)(void *), void *p_para
 {
 	m_precvdata_callback = p_callback;
 	m_precvdata_callback_param = p_param;
-}
-
-// 创建回声抵消器
-void CAudioStream::create_echo_canceller(void)
-{
-	int		aec_filter_len;
-
-	destroy_echo_canceller();
-	if (m_sample_rate <= 8000)
-	{
-		m_aec_frame_len = AEC_FRAME_LEN_8K;
-		aec_filter_len = AEC_FILTER_LEN_8K;
-	}
-	else
-	{
-		m_aec_frame_len = AEC_FRAME_LEN_16K;
-		aec_filter_len = AEC_FILTER_LEN_16K;
-	}
-	m_paec_ref_buf = (short *)ua_malloc(m_aec_frame_len * sizeof (short));
-	m_paec_mic_buf = (short *)ua_malloc(m_aec_frame_len * sizeof (short));
-	m_pecho_st = speex_echo_state_init(m_aec_frame_len, aec_filter_len);
-	m_ppreprocess_st = speex_preprocess_state_init(m_aec_frame_len, m_sample_rate);
-	if (m_paec_ref_buf != NULL && m_paec_mic_buf != NULL && m_pecho_st != NULL && m_ppreprocess_st != NULL)
-		m_use_aec = TRUE;
-}
-
-// 销毁回声抵消器
-void CAudioStream::destroy_echo_canceller(void)
-{
-	m_use_aec = FALSE;
-	m_aec_frame_len = 0;
-	m_aec_ref_len = m_aec_mic_len = 0;
-	if (m_paec_ref_buf != NULL)
-	{
-		ua_free(m_paec_ref_buf);
-		m_paec_ref_buf = NULL;
-	}
-	if (m_paec_mic_buf != NULL)
-	{
-		ua_free(m_paec_mic_buf);
-		m_paec_mic_buf = NULL;
-	}
-	if (m_pecho_st != NULL)
-	{
-		speex_echo_state_destroy(m_pecho_st);
-		m_pecho_st = NULL;
-	}
-	if (m_ppreprocess_st != NULL)
-	{
-		speex_preprocess_state_destroy(m_ppreprocess_st);
-		m_ppreprocess_st = NULL;
-	}
 }
 

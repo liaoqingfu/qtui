@@ -6,6 +6,7 @@
 
 
 extern ncs_cfg_t cfg;
+extern float g_fontResize;
 extern "C"  int _Z6xc9000v( );
 
 extern "C"  void pt( );
@@ -40,7 +41,7 @@ void  myscene_main::widget_init()
     pe.setColor(QPalette::WindowText,Qt::white);
     label_time->setPalette(pe);
     label_time->setAttribute(Qt::WA_TranslucentBackground); 
-    label_time->setFont( QFont(FONE_NAME, TIME_DATE_FONTSIZE*2) );
+    label_time->setFont( QFont(FONE_NAME, TIME_DATE_FONTSIZE*(1+ g_fontResize)) );
     label_time->setGeometry(LABEL_TIME_POS_X ,LABEL_TIME_POS_Y,300,150);
     proxy = this->addWidget(label_time);
     proxy->setRotation(-90);
@@ -50,7 +51,7 @@ void  myscene_main::widget_init()
 	//pe.setColor(QPalette::WindowText,Qt::white);
 	label_date->setPalette(pe);
 	label_date->setAttribute(Qt::WA_TranslucentBackground); 
-	label_date->setFont( QFont(FONE_NAME, TIME_DATE_FONTSIZE*1.5) );
+	label_date->setFont( QFont(FONE_NAME, TIME_DATE_FONTSIZE*(0.5+ g_fontResize)) );
 	label_date->setGeometry(LABEL_DATE_POS_X ,LABEL_DATE_POS_Y,400,150);
 	proxy = this->addWidget(label_date);
 	proxy->setRotation(-90);

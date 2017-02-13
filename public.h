@@ -68,7 +68,7 @@
 #define REF_VIDEO_MS (1000/FRAME_FPS)
 
 #define NUM_CALL 18   //num of call num button
-#define MAX_NUM_LEN 10   //lengh of call num
+#define MAX_NUM_LEN 16   //lengh of call num
 #define MAX_CALL_TYPE  2
 
 #define FONE_NAME "wenquanyi"
@@ -139,7 +139,7 @@
 #define DATE_POSH   50
 
 
-#define LIST_MAX_NUM  64
+#define LIST_MAX_NUM  128
 
 
 
@@ -232,10 +232,11 @@ typedef struct {
 	int noise_alarm_time;
 	
 //	[other_cfg]
-	int screensaver_min;
-	int io_out_pass;
+	int screensaver_sec;
+	QString io_out_pass;
 	int screen_button;
 	int hdmi_style;
+	int font_size;
 	
 //	[list_cfg]
 	int display_col;

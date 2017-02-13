@@ -94,6 +94,7 @@ CSipUA::CSipUA()
 	m_audio_sample_rate = 8000;
 	m_rtp_video_port = SIP_RTP_VIDEO_PORT_DEFAULT;
 	m_pmine_type_video = NULL;
+	memset(m_profile_level_id, 0, sizeof (m_profile_level_id));
 	m_remote_vport = 0;
 	m_payload_type_video = 0;
 	m_video_sample_rate = VIDEO_SAMPLE_RATE;
@@ -208,7 +209,7 @@ CSipUA::~CSipUA()
 	ua_sem_destroy(&m_sem_ua_event_callback);
 }
 
-// 设置本地ip和port
+// 设置本地ip和port(sip协议地址和端口)
 void CSipUA::set_local_addr(const char *p_ip, WORD port)
 {
     if (p_ip != NULL)
@@ -222,7 +223,7 @@ void CSipUA::set_local_addr(const char *p_ip, WORD port)
     m_contact_port = port;
 }
 
-// 设置联系ip和port
+// 设置联系ip和port(用来控制服务器上显示的ip和port)
 void CSipUA::set_contact_addr(const char *p_ip, WORD port)
 {
     if (p_ip != NULL)
@@ -233,7 +234,7 @@ void CSipUA::set_contact_addr(const char *p_ip, WORD port)
     m_contact_port = port;
 }
 
-// 设置注册服务器ip和port
+// 设置注册服务器ip(可以是域名)和port
 void CSipUA::set_register_addr(const char *p_ip, WORD port)
 {
     if (p_ip != NULL)
@@ -252,9 +253,9 @@ void CSipUA::set_username_password(const char *username, const char *password)
     strncpy(m_username, username, SIP_UA_USERNAME_LEN);
     m_username[SIP_UA_USERNAME_LEN - 1] = '\0';
 	port = SIP_RTP_AUDIO_PORT_DEFAULT + atoi(m_username);
-	if (port >= SIP_RTP_VIDEO_PORT_DEFAULT)  //lhg change  SIP_RTP_PORT_MAX to SIP_RTP_VIDEO_PORT_DEFAULT
+	if (port > SIP_RTP_PORT_MAX)
 	{
-		while (port >= SIP_RTP_VIDEO_PORT_DEFAULT)  
+		while (port > SIP_RTP_PORT_MAX)
 			port -= SIP_RTP_PORT_MIN;
 	}
 	m_rtp_audio_port = port;
@@ -344,6 +345,7 @@ BOOL CSipUA::unregister_server(void)
     }
 	return unregister;
 }
+
 // 服务器注册
 BOOL CSipUA::register_server(void)
 {
@@ -355,6 +357,7 @@ BOOL CSipUA::register_server(void)
 	char			contact[SIP_UA_USERNAME_LEN + SIP_UA_USERNAME_LEN];
 	char			call_info[64];
 	osip_message_t  *p_message = NULL;
+	osip_contact_t	*p_contact = NULL;
 
     try
     {
@@ -453,7 +456,8 @@ void CSipUA::process_sip_event(void(*p_callback)(eXosip_event_t *, void *), void
 				sip_event_registration_success(p_event);
                 break;
             case EXOSIP_REGISTRATION_FAILURE:
-                printf_log(LOG_IS_INFO, "[%s][CSipUA::process_sip_event()] : EVENT - registrered failed\n", m_username);
+				if (p_event->response != NULL && p_event->response->status_code != 401)
+					printf_log(LOG_IS_INFO, "[%s][CSipUA::process_sip_event()] : EVENT - registrered failed\n", m_username);
 				sip_event_registration_failure(p_event);
                 break;
             case EXOSIP_CALL_PROCEEDING:
@@ -708,7 +712,7 @@ void CSipUA::sip_event_registration_success(eXosip_event_t *p_event)
 								m_server_date.tm_sec = atoi(parse.m_plain_label.p_text[5]);
 								char			p_time[PATH_MAX];
 								strftime(p_time, PATH_MAX, "%Y-%m-%d %X", &m_server_date);
-								printf_log(LOG_IS_INFO, "[%s][CSipUA::sip_event_registration_success()] : data : %s\n", m_username, p_time);
+								printf_log(LOG_IS_INFO, "[%s][CSipUA::sip_event_registration_success()] : date : %s\n", m_username, p_time);
 							}
 						}
 					}
@@ -750,7 +754,7 @@ void CSipUA::sip_event_registration_failure(eXosip_event_t *p_event)
 	osip_generic_param_t	*p_uri_param = NULL;
 
     m_registering = FALSE;
-	if (p_event->response != NULL && 401 == p_event->response->status_code)
+	if (p_event->response != NULL && p_event->response->status_code == 401)
 		m_register_failure_count++;
 	if (m_register_failure_count >= 2)
 	{
@@ -901,8 +905,10 @@ void CSipUA::process_sdp_video_message(sdp_message_t *p_msg_sdp)
 	osip_generic_param_t	*p_uri_param = NULL;
 	sdp_media_t				*p_md_rsp = NULL;
 	char					*p_payload_str = NULL;		// 服务器优先编码值
+	char					*p_level_id = NULL;
 
 	m_pmine_type_video = NULL;
+	memset(m_profile_level_id, 0, sizeof (m_profile_level_id));
 	if (p_msg_sdp != NULL)
 	{
 		p_md_rsp = eXosip_get_video_media(p_msg_sdp);
@@ -942,6 +948,21 @@ void CSipUA::process_sdp_video_message(sdp_message_t *p_msg_sdp)
 							}
 						}
 					}
+					else if (m_profile_level_id[0] == '\0' && strncasecmp(p_uri_param->gname, "fmtp", 4) == 0)
+					{
+						if (strncasecmp(p_uri_param->gvalue, p_payload_str, strlen(p_payload_str)) == 0)
+						{
+							// profile_level_id
+							p_level_id = strstr(p_uri_param->gvalue, "profile-level-id=");
+							if (p_level_id != NULL)
+							{
+								p_level_id += strlen("profile-level-id=");
+								if (strlen(p_level_id) >= VIDEO_PROFILE_LEVEL_ID_LEN)
+									memcpy(m_profile_level_id, p_level_id, VIDEO_PROFILE_LEVEL_ID_LEN);
+								m_profile_level_id[VIDEO_PROFILE_LEVEL_ID_LEN] = '\0';
+							}
+						}
+					}
 				}
 			}
 		}
@@ -967,6 +988,11 @@ void CSipUA::process_sdp_audio_message(sdp_message_t *p_msg_sdp)
 			m_remote_aport = atoi(p_md_rsp->m_port);
 			m_payload_type_audio = atoi(p_payload_str);
 			printf_log(LOG_IS_INFO, "[%s][CSipUA::process_sdp_audio_message()] : payload : %s:%d,%d\n", m_username, m_remote_ip, m_remote_aport, m_payload_type_audio);
+			if (m_payload_type_audio == 0)
+			{
+				m_pmine_type_audio = g_mime_type_pcmu;
+				m_audio_sample_rate = 8000;
+			}
 
 			size = osip_list_size(&p_md_rsp->a_attributes);
 			for (i = 0; i < size; i++)
@@ -1034,7 +1060,7 @@ void CSipUA::process_sdp_message(sdp_message_t *p_msg_sdp)
 		process_sdp_video_message(p_msg_sdp);
 	}
 	printf_log(LOG_IS_INFO, "[%s][CSipUA::process_sdp_message()] : payload : audio(%s/%d);video(%s/%d)\n", \
-		m_username, m_pmine_type_audio, m_audio_sample_rate, m_pmine_type_video, m_video_sample_rate);
+		m_username, m_pmine_type_audio ? m_pmine_type_audio : "?", m_audio_sample_rate, m_pmine_type_video ? m_pmine_type_video : "?", m_video_sample_rate);
 }
 
 // SIP事件(呼叫)
@@ -1295,12 +1321,20 @@ BOOL CSipUA::task_begin(const char *callee, sip_task_type_t task_type, const cha
 
     try
     {
-        if ((m_pcontext_eXosip == NULL) || !m_registered || m_status != SIP_STATUS_NULL || callee == NULL)
+        if ((m_pcontext_eXosip == NULL) || m_status != SIP_STATUS_NULL || callee == NULL)	//  || !m_registered
             throw 10;
 		strncpy(m_callee_username, callee, SIP_UA_USERNAME_LEN);
 		m_callee_username[SIP_UA_USERNAME_LEN - 1] = '\0';
-		sprintf(to_callee, "<sip:%s@%s:%d>", callee, m_reg_ip, m_reg_port);
-        sprintf(from_caller, "<sip:%s@%s:%d>", m_username, m_reg_ip, m_reg_port);
+		if (strchr(callee, '@') != NULL)	// 无服务器模式
+		{
+			sprintf(to_callee, "<sip:%s>", callee);
+			sprintf(from_caller, "<sip:%s@%s:%d>", m_username, m_local_ip, m_local_port);
+		}
+		else
+		{
+			sprintf(to_callee, "<sip:%s@%s:%d>", callee, m_reg_ip, m_reg_port);
+			sprintf(from_caller, "<sip:%s@%s:%d>", m_username, m_reg_ip, m_reg_port);
+		}
         result = eXosip_call_build_initial_invite(m_pcontext_eXosip, &p_invite, to_callee, from_caller, NULL, SIP_UA_STRING);
         if (result != 0)
         {
@@ -1512,7 +1546,7 @@ BOOL CSipUA::task_end(void)
 
     try
     {
-        if ((m_pcontext_eXosip == NULL) || !m_registered || m_status == SIP_STATUS_NULL)
+        if ((m_pcontext_eXosip == NULL) || m_status == SIP_STATUS_NULL)	//  || !m_registered
             throw 10;
         eXosip_lock(m_pcontext_eXosip);
         result = eXosip_call_terminate(m_pcontext_eXosip, m_call_id, m_dialog_id);
@@ -1743,10 +1777,10 @@ BOOL CSipUA::rtp_connect_audio(void)
 	param.sample_rate = m_audio_sample_rate;
 	//if ((m_task_type == SIP_TASK_TYPE_MONITOR_OUTGOING && m_status == SIP_STATUS_MONITORING) \
 	//	|| (m_task_type == SIP_TASK_TYPE_BC_INCOMING && m_status == SIP_STATUS_BCING))
-	if (!(m_task_type == SIP_TASK_TYPE_BC_INCOMING && ua_is_multicast(m_remote_ip)))
-		param.enable_rtp_send = TRUE;
-	else
+	if (m_task_type == SIP_TASK_TYPE_BC_INCOMING && ua_is_multicast(m_remote_ip))
 		param.enable_rtp_send = FALSE;
+	else
+		param.enable_rtp_send = TRUE;
 	//if (m_task_type != SIP_TASK_TYPE_MONITOR_INCOMING && m_prtp_session_audio != NULL)
 	param.enable_rtp_recv = TRUE;
 	if (m_task_type == SIP_TASK_TYPE_BC_INCOMING \
@@ -1754,6 +1788,10 @@ BOOL CSipUA::rtp_connect_audio(void)
 		param.enable_memory_fill_send = TRUE;
 	else
 		param.enable_memory_fill_send = FALSE;
+	if (m_task_type == SIP_TASK_TYPE_TALK_OUTGOING || m_task_type == SIP_TASK_TYPE_TALK_INCOMING)
+		param.use_aec = TRUE;
+	else
+		param.use_aec = FALSE;
 	param.mseconds_per_packet = MSECOND_PER_PACKET;
 	if (m_task_type == SIP_TASK_TYPE_BC_INCOMING || m_task_type == SIP_TASK_TYPE_BC_OUTGOING)
 		param.b_rtp_buf_max = TRUE;

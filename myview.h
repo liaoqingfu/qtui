@@ -25,15 +25,16 @@ public:
 	myscene_video *scene_video;
 	myscene_list * scene_list;
 	myscene_pic * scene_pic;
+	void ReadAllSettings( );
+	qint64 screenSaverStartTime; 
+	int		b_screenSaver;
+	void setScreenSaver( int bset);
 
     explicit MyView(QWidget *parent = 0);  
 	~MyView( );  
   
 protected:  
     void WriteSettings(QString sector, QString sItem,int value);
-	void ReadAllSettings( );
-	QString getLocalIp();
-
 
 
 

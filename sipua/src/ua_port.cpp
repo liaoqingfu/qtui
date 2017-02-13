@@ -255,10 +255,8 @@ BOOL ua_delete_timer(timer_data_t *p_timer_data, BOOL b_wait)
 	if (p_timer_data != NULL)
 	{
 		//ua_mutex_lock(&p_timer_data->mut);
-		printf_log(LOG_IS_INFO, "[ua_delete_timer] : %d!\n", p_timer_data->sival );
-        if (timer_delete(p_timer_data->timerid) == 0){
+        if (timer_delete(p_timer_data->timerid) == 0)
 			p_timer_data->timerid = NULL;
-        }
 
 		//ua_mutex_unlock(&p_timer_data->mut);
 		if (p_timer_data->timerid == NULL)
@@ -406,7 +404,7 @@ BOOL ua_create_timer(timer_data_t *p_timer_data, void(*p_callback)(union sigval)
             sprintf(p_strerr, "[ua_create_timer(timer_settime)](%d) : %s\n", errno, strerror(errno));
             throw 11;
         }
-        printf_log(LOG_IS_INFO, "[ua_create_timer] : %d!\n", p_timer_data->sival );
+        
         b_result = TRUE;
     }
     catch (int throw_err)

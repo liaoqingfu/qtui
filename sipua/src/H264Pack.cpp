@@ -236,12 +236,10 @@ CH264_RTP_UNPACK::~CH264_RTP_UNPACK(void)
 //返回值为指向视频数据帧的指针。输入数据可能被破坏。
 BYTE* CH264_RTP_UNPACK::Parse_RTP_Packet ( BYTE *pBuf, unsigned short nSize, int *outSize )
 {
-	if ( nSize <= 12 )
-	{
+	if (nSize <= 12)
 		return NULL ;
-	}
 
-	BYTE *cp = (BYTE*)&m_RTP_Header ;
+	BYTE *cp = (BYTE *)&m_RTP_Header ;
 	memcpy(cp, pBuf, 12);
 	/* // ortp做了网络数据到主机数据顺序转换
 	cp[0] = pBuf[0] ;
@@ -270,101 +268,81 @@ BYTE* CH264_RTP_UNPACK::Parse_RTP_Packet ( BYTE *pBuf, unsigned short nSize, int
 	LONG nPayloadSize = nSize - 12 ;
 
 	// Check the RTP version number (it should be 2):
-	if ( m_RTP_Header.v != RTP_VERSION )
-	{
+	if (m_RTP_Header.v != RTP_VERSION)
 		return NULL ;
-	}
 	
 	// Skip over any CSRC identifiers in the header:
-	if ( m_RTP_Header.cc )
+	if (m_RTP_Header.cc)
 	{
-		long cc = m_RTP_Header.cc * 4 ;
-		if ( nPayloadSize < cc )
-		{
+		long cc = m_RTP_Header.cc * 4;
+		if (nPayloadSize < cc)
 			return NULL ;
-		}
 
 		nPayloadSize -= cc ;
 		pPayload += cc ;
 	}
 
 	// Check for (& ignore) any RTP header extension
-	if ( m_RTP_Header.x )
+	if (m_RTP_Header.x)
 	{
-		if ( nPayloadSize < 4 )
-		{
-			return NULL ;
-		}
+		if (nPayloadSize < 4)
+			return NULL;
 
-		nPayloadSize -= 4 ;
+		nPayloadSize -= 4;
+		pPayload += 2;
+		long rtpExtSize = pPayload[0];
+		rtpExtSize <<= 8 ;
+		rtpExtSize |= pPayload[1] ;
 		pPayload += 2 ;
-		long l = pPayload[0] ;
-		l <<= 8 ;
-		l |= pPayload[1] ;
-		pPayload += 2 ;
-		l *= 4 ;
-		if ( nPayloadSize < l )
-		{
+		rtpExtSize *= 4 ;
+		if (nPayloadSize < rtpExtSize)
 			return NULL ;
-		}
-		nPayloadSize -= l ;
-		pPayload += l ;
+		nPayloadSize -= rtpExtSize;
+		pPayload += rtpExtSize;
 	}
 		
 	// Discard any padding bytes:
-	if ( m_RTP_Header.p )
+	if (m_RTP_Header.p)
 	{
-		if ( nPayloadSize == 0 )
-		{
+		if (nPayloadSize == 0)
 			return NULL ;
-		}
-		long Padding = pPayload[nPayloadSize-1] ;
-		if ( nPayloadSize < Padding )
-		{
+		long nPadding = pPayload[nPayloadSize - 1] ;
+		if (nPayloadSize < nPadding)
 			return NULL ;
-		}
-		nPayloadSize -= Padding ;
+		nPayloadSize -= nPadding ;
 	}
 
 	// Check the Payload Type.
 	// ortp里有检查,跳过
-	//if ( m_RTP_Header.pt != m_H264PAYLOADTYPE )
-	//{
+	//if (m_RTP_Header.pt != m_H264PAYLOADTYPE)
 	//	return NULL ;
-	//}
 
-	int PayloadType = pPayload[0] & 0x1f ;
-	int NALType = PayloadType ;
-	if ( NALType == 28 ) // FU_A
+	int nPayloadType = pPayload[0] & 0x1f;
+	int nNALType = nPayloadType ;
+	if (nNALType == 28) // FU_A
 	{
-		if ( nPayloadSize < 2 )
-		{
+		if (nPayloadSize < 2)
 			return NULL ;
-		}
 
-		NALType = pPayload[1] & 0x1f ;
+		nNALType = pPayload[1] & 0x1f;
 	}
 
-	if ( m_ssrc != m_RTP_Header.ssrc )
+	if (m_ssrc != m_RTP_Header.ssrc)
 	{
 		m_ssrc = m_RTP_Header.ssrc ;
-		SetLostPacket () ;
+		SetLostPacket() ;
 	}
 	
-	if ( NALType == 0x07 ) // SPS
-	{
+	if (nNALType == 0x07) // SPS
 		m_bSPSFound = true ;
-	}
 
-	if ( !m_bSPSFound )
-	{
+	if (!m_bSPSFound)
 		return NULL ;
-	}
 
-	if ( NALType == 0x07 || NALType == 0x08) // SPS PPS
+	if (nNALType == 0x07 || nNALType == 0x08) // SPS PPS
 	{
 		m_wSeq = m_RTP_Header.seq ;
-		m_bPrevFrameEnd = true ;
+		m_bPrevFrameEnd = true;
 
 		pPayload -= 4 ;
 		*((DWORD*)(pPayload)) = 0x01000000 ;
@@ -372,35 +350,35 @@ BYTE* CH264_RTP_UNPACK::Parse_RTP_Packet ( BYTE *pBuf, unsigned short nSize, int
 		return pPayload ;
 	}
 
-	if ( m_bWaitKeyFrame )
+	if (m_bWaitKeyFrame)
 	{
-		if ( m_RTP_Header.m ) // frame end
+		if (m_RTP_Header.m) // frame end
 		{
-			m_bPrevFrameEnd = true ;
-			if ( !m_bAssemblingFrame )
+			m_bPrevFrameEnd = true;
+			if (!m_bAssemblingFrame)
 			{
 				m_wSeq = m_RTP_Header.seq ;
 				return NULL ;
 			}
 		}
 
-		if ( !m_bPrevFrameEnd )
+		if (!m_bPrevFrameEnd)
 		{
 			m_wSeq = m_RTP_Header.seq ;
 			return NULL ;
 		}
 		else
 		{
-			if ( NALType != 0x05 ) // KEY FRAME
+			if (nNALType != 0x05) // KEY FRAME
 			{
 				m_wSeq = m_RTP_Header.seq ;
 				m_bPrevFrameEnd = false ;
-				return NULL ;
+				return NULL;
 			}
 		}
 	}
 	///////////////////////////////////////////////////////////////		
-	if ( m_RTP_Header.seq != (WORD)( m_wSeq + 1 ) ) // lost packet
+	if (m_RTP_Header.seq != (WORD)(m_wSeq + 1)) // lost packet
 	{
 		m_wSeq = m_RTP_Header.seq ;
 		SetLostPacket () ;			
@@ -409,11 +387,10 @@ BYTE* CH264_RTP_UNPACK::Parse_RTP_Packet ( BYTE *pBuf, unsigned short nSize, int
 	else
 	{
 		// 码流正常
-
 		m_wSeq = m_RTP_Header.seq ;
 		m_bAssemblingFrame = true ;
 			
-		if ( PayloadType != 28 ) // whole NAL
+		if (nPayloadType != 28) // whole NAL
 		{
 			*((DWORD*)(m_pStart)) = 0x01000000 ;
 			m_pStart += 4 ;
@@ -421,13 +398,13 @@ BYTE* CH264_RTP_UNPACK::Parse_RTP_Packet ( BYTE *pBuf, unsigned short nSize, int
 		}
 		else // FU_A
 		{
-			if ( pPayload[1] & 0x80) // FU_A start
+			if (pPayload[1] & 0x80) // FU_A start
 			{
 				*((DWORD*)(m_pStart)) = 0x01000000 ;
 				m_pStart += 4 ;
 				m_dwSize += 4 ;
 
-				pPayload[1] = ( pPayload[0] & 0xE0 ) | NALType ;
+				pPayload[1] = ( pPayload[0] & 0xE0 ) | nNALType ;
 					
 				pPayload += 1 ;
 				nPayloadSize -= 1 ;
@@ -439,35 +416,31 @@ BYTE* CH264_RTP_UNPACK::Parse_RTP_Packet ( BYTE *pBuf, unsigned short nSize, int
 			}
 		}
 
-		if ( m_pStart + nPayloadSize < m_pEnd )
+		if (m_pStart + nPayloadSize < m_pEnd)
 		{
-			memcpy ( m_pStart, pPayload, nPayloadSize ) ;
+			memcpy(m_pStart, pPayload, nPayloadSize) ;
 			m_dwSize += nPayloadSize ;
 			m_pStart += nPayloadSize ;
 		}
 		else // memory overflow
 		{
-			SetLostPacket () ;
+			SetLostPacket() ;
 			return NULL ;
 		}
 
-		if ( m_RTP_Header.m) // frame end || NALType == 5
+		if (m_RTP_Header.m) // frame end || nNALType == 5
 		{
 			*outSize = m_dwSize ;
 
 			m_pStart = m_pBuf ;
-			m_dwSize = 0 ;
+			m_dwSize = 0;
 
-			if ( NALType == 0x05 ) // KEY FRAME
-			{
+			if (nNALType == 0x05) // KEY FRAME
 				m_bWaitKeyFrame = false ;
-			}
 			return m_pBuf ;
 		}
 		else
-		{
 			return NULL ;
-		}
 	}
 }
 

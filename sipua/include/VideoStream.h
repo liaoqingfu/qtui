@@ -29,10 +29,11 @@
 extern char g_mime_type_h264[];
 
 #define VIDEO_SAMPLE_RATE			90000			// 视频采样率
-#define VIDEO_RTP_FRAME_LEN_MAX		(1024*40)		// 压缩后每帧大小(最大)
+#define VIDEO_RTP_FRAME_LEN_MAX		(1024*100)		// 压缩后每帧大小(最大)
 #define VIDEO_RTP_FRAME_LEN_MIN		512				// 压缩后每帧大小(最小)
 #define VIDEO_FRAME_LEN_MAX			(2048*10)		// 未压缩每帧大小
-#define VIDEO_RTP_FRAME_COUNT		4
+#define VIDEO_RTP_FRAME_COUNT		6
+#define VIDEO_PROFILE_LEVEL_ID_LEN	6
 
 #define VIDEO_RECORD_FOLDER_NAME	"record"
 
@@ -101,8 +102,8 @@ private:
 	static List<CVideoStream *> m_list_vs;						// 视频流清单
 	static ua_mutex_t		m_mutex_vs;							// m_list_vs视频流锁
 	static timer_data_t		m_tdata_video;						// 视频定时器
-	static BOOL				m_init_static_vs ;					// 静态变量是否初始化
-	static BOOL				m_timer_rtp_data ;				// 定时器里是否处理了rtp数据
+	static BOOL				m_init_static_vs;					// 静态变量是否初始化
+	static BOOL				m_timer_rtp_data;					// 定时器里是否处理了rtp数据
 
 	// video
 	BOOL					m_enable_video_card;

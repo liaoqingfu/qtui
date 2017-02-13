@@ -5,7 +5,7 @@
 
 
 //#define  LIST_COLUMN 		cfg.display_col
-#define  LIST_ROW    		8
+#define  LIST_ROW    		5
 
 #define LIST_START_X     150  
 #define LIST_START_Y     SCREEN_HEIGHT 
@@ -13,6 +13,7 @@
 #define  LIST_WIDTH  		( (SCREEN_WID - LIST_START_X) / (LIST_ROW +2) )
 
 extern ncs_cfg_t cfg;
+extern float g_fontResize;
 extern int list_call_id;  //ºô½Ðid
 
 void  myscene_list::widget_init()
@@ -40,7 +41,7 @@ void  myscene_list::widget_init()
 	pe.setColor(QPalette::ButtonText, Qt::white); 
     label_time->setPalette(pe);
     label_time->setAttribute(Qt::WA_TranslucentBackground); 
-    label_time->setFont( QFont(FONE_NAME, TIME_DATE_FONTSIZE) );
+    label_time->setFont( QFont(FONE_NAME, TIME_DATE_FONTSIZE* g_fontResize) );
     label_time->setGeometry(TIME_POSX,TIME_POSY,TIME_POSW,TIME_POSH);
     proxy = this->addWidget(label_time);
     proxy->setRotation(-90);
@@ -56,7 +57,7 @@ void  myscene_list::widget_init()
 	//pe.setColor(QPalette::WindowText,Qt::white);
 	label_date->setPalette(pe);
 	label_date->setAttribute(Qt::WA_TranslucentBackground); 
-	label_date->setFont( QFont(FONE_NAME, TIME_DATE_FONTSIZE) );
+	label_date->setFont( QFont(FONE_NAME, TIME_DATE_FONTSIZE* g_fontResize) );
 	label_date->setGeometry(DATE_POSX,DATE_POSY,DATE_POSW,DATE_POSH);
 	proxy = this->addWidget(label_date);
 	proxy->setRotation(-90);
@@ -64,7 +65,7 @@ void  myscene_list::widget_init()
 	label_listcall = new QLabel();
 	label_listcall->setPalette(pe);
 	label_listcall->setAttribute(Qt::WA_TranslucentBackground);
-	label_listcall->setFont( QFont(FONE_NAME, TIME_DATE_FONTSIZE*2) );
+	label_listcall->setFont( QFont(FONE_NAME, TIME_DATE_FONTSIZE*(1+ g_fontResize)) );
 	label_listcall->setGeometry(60,450,400,120);
 	proxy = this->addWidget(label_listcall);
 	proxy->setRotation(-90);
@@ -87,7 +88,7 @@ void  myscene_list::widget_init()
 		
 			bt_listcall[i]->setStyleSheet("QPushButton{"  "border:3px solid white; text-align: left;}"); 
 			
-			bt_listcall[i]->setFont( QFont(FONE_NAME, TIME_DATE_FONTSIZE*1.5) );
+			bt_listcall[i]->setFont( QFont(FONE_NAME, TIME_DATE_FONTSIZE*(0.5+ g_fontResize)) );
 		}
 		else{
 			int j = i - LIST_COLUMN*LIST_ROW ;

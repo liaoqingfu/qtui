@@ -32,13 +32,11 @@ char g_mime_type_h264[] = "H264";
 //------------- payload type end -----------------------
 
 // æ≤Ã¨±‰¡ø
-
 List<CVideoStream *> CVideoStream::m_list_vs;
 ua_mutex_t		CVideoStream::m_mutex_vs;
 timer_data_t	CVideoStream::m_tdata_video;
 BOOL			CVideoStream::m_init_static_vs = FALSE;
 BOOL			CVideoStream::m_timer_rtp_data = FALSE;
-
 
 CVideoStream::CVideoStream()
 	: m_h264_rtp_unpack(PAYLOAD_TYPE_H264), m_h264_rtp_pack(0x12345678)
@@ -329,9 +327,8 @@ void CVideoStream::process_rtp_data(void)
 				p_mblk = rtp_session_recvm_with_ts(m_prtp_session_video, m_rtp_video_ts);
 				while (p_mblk != NULL)
 				{
-					//2017-1-17  
-					//mblk_t	*p_mblk_temp = copymsg(p_mblk);
-					//rtp_session_sendm_with_ts(m_prtp_session_video, p_mblk_temp, m_rtp_video_ts);
+					mblk_t	*p_mblk_temp = copymsg(p_mblk);
+					rtp_session_sendm_with_ts(m_prtp_session_video, p_mblk_temp, m_rtp_video_ts);
 					m_enable_memory_fill_send = FALSE;
 
 					//if (p_mblk->b_wptr - p_mblk->b_rptr > 1472)
@@ -633,7 +630,7 @@ BOOL CVideoStream::rtp_connect(video_rtp_connect_param_t *p_param)
 		}
 
 		m_rtp_is_connect = TRUE;
-		printf_log(LOG_IS_INFO, "[CVideoStream::rtp_connect()] 2017-01-17 : %s:%d - %s:%d\n", p_param->p_local_ip, p_param->local_port, p_param->p_remote_ip, p_param->remote_port);
+		printf_log(LOG_IS_INFO, "[CVideoStream::rtp_connect()] : %s:%d - %s:%d\n", p_param->p_local_ip, p_param->local_port, p_param->p_remote_ip, p_param->remote_port);
 	}
 	catch (int throw_err)
 	{

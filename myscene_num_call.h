@@ -20,6 +20,7 @@ public:
 	QLabel *label_time;
 	QLabel *label_date;
 	QLabel *label_net_status;
+	qint64 	OpenDoorSec;//打开门时间，单位sec
 	
 protected:	
 //	void keyPressEvent(QKeyEvent *event);  

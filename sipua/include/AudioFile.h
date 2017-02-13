@@ -20,7 +20,7 @@ using namespace std;
 #include "LIST.H"
 #include "libmad/libmad_face.h"
 #include "liblame/liblame_face.h"
-#include "libresample/resample_face.h"
+#include "libspeex/resample_face.h"
 
 #define TAG_RIFF			0x46464952
 #define TAG_WAVE			0x45564157 

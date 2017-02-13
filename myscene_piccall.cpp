@@ -3,6 +3,7 @@
 #include "video/main_api.h"
 #include "myview.h" 
 
+extern float g_fontResize;
 
 void  myscene_pic::widget_init()
 {
@@ -29,7 +30,7 @@ void  myscene_pic::widget_init()
     pe.setColor(QPalette::WindowText,Qt::white);
     label_time->setPalette(pe);
     label_time->setAttribute(Qt::WA_TranslucentBackground); 
-    label_time->setFont( QFont(FONE_NAME, TIME_DATE_FONTSIZE) );
+    label_time->setFont( QFont(FONE_NAME, TIME_DATE_FONTSIZE * g_fontResize ) );
     label_time->setGeometry(TIME_POSX,TIME_POSY,TIME_POSW,TIME_POSH);
     proxy = this->addWidget(label_time);
     proxy->setRotation(-90);
@@ -39,7 +40,7 @@ void  myscene_pic::widget_init()
 	//pe.setColor(QPalette::WindowText,Qt::white);
 	label_date->setPalette(pe);
 	label_date->setAttribute(Qt::WA_TranslucentBackground); 
-	label_date->setFont( QFont(FONE_NAME, TIME_DATE_FONTSIZE) );
+	label_date->setFont( QFont(FONE_NAME, TIME_DATE_FONTSIZE * g_fontResize) );
 	label_date->setGeometry(DATE_POSX,DATE_POSY,DATE_POSW,DATE_POSH);
 	proxy = this->addWidget(label_date);
 	proxy->setRotation(-90);

@@ -21,6 +21,7 @@
 int list_call_id = -1;  //ºô½Ðid
 
 extern ncs_cfg_t cfg;
+extern float g_fontResize;
 extern "C"  int _Z6xc9000v( );
 
 static int bCaptureThread = 0;
@@ -391,26 +392,31 @@ void sipEvent_callback(eXosip_event_t *p_event, void *pParam)
 			break;
 		case EXOSIP_CALL_INVITE:
 			pMysceneCalling->SipTalkType = TS_INCOMING_TALK;
+			if( pMysceneCalling->pmv->b_screenSaver )  //»½ÐÑ
+					pMysceneCalling->pmv->setScreenSaver(0);
 			pMysceneCalling->label_calling->setText("INCOME CALL... ...");
 			pMysceneCalling->pmv->changeWindowType(WINDOW_TYPE_CALLING);
-			pMysceneCalling->bAnswer_show( 1 ); 
-			
-			if( cfg.talk_auto_answer ) {
-
-				if( cfg.talk_auto_answer_time > 0) {
-					//pMysceneCalling->emitSignalAutoAnswer();  
-					pMysceneCalling->m_auto_answer_count = cfg.talk_auto_answer_time;
-					printf_log(LOG_IS_INFO, "\tstart emit Signal AutoAnswer\n");
+			if( (pMysceneCalling->sip_ua_1->m_task_type != SIP_TASK_TYPE_BC_INCOMING) &&
+				(pMysceneCalling->sip_ua_1->m_task_type != SIP_TASK_TYPE_MONITOR_INCOMING)  ) {  //¶Ô½²
+				pMysceneCalling->bAnswer_show( 1 ); 
+				if( cfg.talk_auto_answer ) {
+					if( cfg.talk_auto_answer_time > 0) {
+						//pMysceneCalling->emitSignalAutoAnswer();  
+						pMysceneCalling->m_auto_answer_count = cfg.talk_auto_answer_time;
+						printf_log(LOG_IS_INFO, "\tstart emit Signal AutoAnswer\n");
+					}
+					else { //talk_auto_answer_time <=0, answer call now
+						pMysceneCalling->bt_answerCallClicked() ;
+						printf_log(LOG_IS_INFO, "EXOSIP CALL INVITE,auto ANSWER SUCCESS\n");
+					}
 				}
-				else  //talk_auto_answer_time <=0, answer call now
-					pMysceneCalling->bt_answerCallClicked() ;
-					printf_log(LOG_IS_INFO, "EXOSIP CALL INVITE,auto ANSWER SUCCESS\n");
-
-			}
-			else{
-				printf_log(LOG_IS_INFO, "\trecev call \n");
-				
-			}
+				else
+					printf_log(LOG_IS_INFO, "\trecev call \n");
+			}  //¹ã²¥¡¢¼àÌý
+			else {
+				pMysceneCalling->bAnswer_show( 0 ); 
+				pMysceneCalling->bt_answerCallClicked() ;
+			}				
 			
 			break;
 		case EXOSIP_CALL_RELEASED :  //EXOSIP_CALL_CLOSED
@@ -489,7 +495,7 @@ void  myscene_calling::widget_init()
 	//pe.setColor(QPalette::WindowText,Qt::white);
 	label_calling->setPalette(pe);
 	label_calling->setAttribute(Qt::WA_TranslucentBackground); 
-	label_calling->setFont( QFont(FONE_NAME, TIME_DATE_FONTSIZE*1.5) );
+	label_calling->setFont( QFont(FONE_NAME, TIME_DATE_FONTSIZE*(0.5+ g_fontResize)) );
 	label_calling->setGeometry(290,370,250,250);
 	proxy = this->addWidget(label_calling);
 	proxy->setRotation(-90);
@@ -498,14 +504,14 @@ void  myscene_calling::widget_init()
 	QPixmap pixmap;
 
     bt_hangup = new QPushButton;
-  	bt_hangup->setFont( QFont(FONE_NAME, TIME_DATE_FONTSIZE*1.5) );
+  	bt_hangup->setFont( QFont(FONE_NAME, TIME_DATE_FONTSIZE*(0.5+ g_fontResize)) );
     bt_hangup->move(920,400);
    	bt_hangup->setText("STOP"); 
 	proxy = this->addWidget(bt_hangup);
 	proxy->setRotation(-90);
 
 	bt_answerCall = new QPushButton;
-  	bt_answerCall->setFont( QFont(FONE_NAME, TIME_DATE_FONTSIZE*1.5) );
+  	bt_answerCall->setFont( QFont(FONE_NAME, TIME_DATE_FONTSIZE*(0.5+ g_fontResize)) );
     bt_answerCall->move(920,200);
    	bt_answerCall->setText("answer"); 
 	proxy = this->addWidget(bt_answerCall);
@@ -700,6 +706,7 @@ void 	myscene_calling::inCall(  )
 	label_calling->setText("TALKING... ...");
 	bt_answerCall->setVisible(false); 
 	SipTalkType = TS_TALKING;  //  CALL_AUDIO_TALK     CALL_VIDEO_TALK;
+	pmv->screenSaverStartTime = QDateTime::currentMSecsSinceEpoch();
 }
 
 
@@ -730,6 +737,7 @@ int myscene_calling::stopCall()
 			gpio_set( GPO_LOLR_SPK,	 LOLR_MUTE);
 		sip_ua_1->set_video_recvdata_callback(NULL, NULL);
 		sip_ua_1->task_end();
+		pmv->screenSaverStartTime = QDateTime::currentMSecsSinceEpoch();
 		qDebug() << " 		 		---stop Call--   \n";
 		
 		if( list_call_id >= 0 ){
